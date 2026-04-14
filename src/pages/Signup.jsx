@@ -7,6 +7,7 @@ function Signup() {
     username: "",
     email: "",
     password: "",
+    confirmationPassword: "",
     fullName: "",
   });
 
