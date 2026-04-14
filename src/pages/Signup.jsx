@@ -34,6 +34,7 @@ function Signup() {
           <input name="username" placeholder="USERNAME" onChange={handleChange} />
           <input name="email" placeholder="EMAIL" onChange={handleChange} />
           <input name="password" type="password" placeholder="PASSWORD" onChange={handleChange} />
+           <input name="confirmationPassword" type="password" placeholder="CONFIRM PASSWORD" onChange={handleChange} />
 
           <button type="submit">SIGN UP</button>
         </form>
