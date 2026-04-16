@@ -1,8 +1,8 @@
 function Dashboard() {
   return (
     <div>
-      <h2>HOME</h2>
-      <p>sigma banget :batu:</p>
+      <h2>Admin</h2>
+      <p>Atmin Sudah Datang!</p>
     </div>
   );
 }

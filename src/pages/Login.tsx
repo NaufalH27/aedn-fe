@@ -4,6 +4,7 @@ import { login } from "../services/AuthService";
 import { jwtDecode } from "jwt-decode";
 import useAuthStore from "../store/AuthStore";
 import type { DecodedToken } from "../types/Auth";
+import { AxiosError } from "axios";
 
 type LoginMethod = "username" | "email";
 
@@ -15,6 +16,7 @@ type FormState = {
 
 function Login() {
   const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
   const [loginMethod, setLoginMethod] = useState<LoginMethod>("username");
 
@@ -63,12 +65,28 @@ function Login() {
       if (roles.includes("ROLE_ADMIN")) {
         navigate("/admin");
       } else if (roles.includes("ROLE_USER")) {
-        navigate("/home");
+        navigate("/product");
       } else {
         navigate("/");
       }
     } catch (err) {
       console.error("Login failed:", err);
+      if (err instanceof AxiosError) {
+        if (err.response) {
+          setError(
+            (err.response.data?.error?.details ||
+              err.response.data?.message ||
+              "Request failed" ) + ` (${err.response.status})`
+          );
+        } else {
+          setError("Server is unreachable");
+        }
+
+      } else if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Something unexpected happend");
+      }
     }
   };
 
@@ -83,6 +101,12 @@ function Login() {
           Login to your account
         </p>
 
+          {error && (
+            <div className="bg-red-100 mb-5 border border-red-400 text-red-700 px-4 py-3 rounded-lg text-sm">
+            Login Failed: {error}
+            </div>
+          )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block mb-1 font-medium text-sm text-gray-700">
@@ -94,6 +118,8 @@ function Login() {
               name={loginMethod}
               value={form[loginMethod]}
               placeholder={`Enter your ${loginMethod}`}
+              maxLength={255}
+              required
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -109,6 +135,8 @@ function Login() {
               name="password"
               value={form.password}
               placeholder="Enter your password"
+              maxLength={72}
+              required
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -120,6 +148,7 @@ function Login() {
           >
             Use {loginMethod === "username" ? "Email" : "Username"} instead
           </p>
+
 
           <button
             type="submit"

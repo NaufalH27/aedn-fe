@@ -1,8 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "../pages/Login";
 import Signup from "../pages/Signup";
-import Dashboard from "../pages/Dashboard";
-import Product from "../pages/Product";
+import Dashboard from "../pages/admin/Dashboard";
+import Product from "../pages/user/Product";
+import Profile from "../pages/user/Profile";
 
 import { useAuthCheck } from "../hooks/AuthCheck";
 import type { ReactNode } from "react";
@@ -29,6 +30,7 @@ function AppRouter() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/product" element={<Product />} />
+
         <Route
           path="/admin"
           element={
@@ -39,10 +41,10 @@ function AppRouter() {
         />
 
         <Route
-          path="/home"
+          path="/profile"
           element={
             <ProtectedRoute roles={["ROLE_USER"]}>
-              <Dashboard />
+              <Profile/>
             </ProtectedRoute>
           }
         />
