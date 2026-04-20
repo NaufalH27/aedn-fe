@@ -9,6 +9,7 @@ const useAuthStore = create<AuthState>((set) => ({
   roles: [],
   subject: null,
   username: null,
+  fullName: null,
   email: null,
 
   setAccessToken: (token: string) => {
@@ -17,6 +18,7 @@ const useAuthStore = create<AuthState>((set) => ({
     let subject: string | null = null;
     let username: string | null = null;
     let email: string | null = null;
+    let fullName: string | null = null;
 
     try {
       decoded = jwtDecode<DecodedToken>(token);
@@ -24,6 +26,7 @@ const useAuthStore = create<AuthState>((set) => ({
       subject = decoded?.sub || null;
       username = decoded?.username || null;
       email = decoded?.email || null;
+      fullName = decoded?.fullName || null;
     } catch {
     }
 
@@ -34,6 +37,7 @@ const useAuthStore = create<AuthState>((set) => ({
       subject,
       username,
       email,
+      fullName,
     });
   },
 
@@ -45,6 +49,7 @@ const useAuthStore = create<AuthState>((set) => ({
       subject: null,
       username: null,
       email: null,
+      fullName: null,
     }),
 }));
 
