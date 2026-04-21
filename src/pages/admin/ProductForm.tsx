@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useRef } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import type { ReqProduct } from "../../types/Products";
-import { getUploadProductSignedUrl, submitProduct } from "../../services/ProductService";
+import { editProduct, getUploadProductSignedUrl, submitProduct } from "../../services/ProductService";
 import Markdown from 'react-markdown'
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
@@ -10,6 +10,7 @@ type Status = "idle" | "loading" | "success" | "error";
 
 
 export type FormState = {
+  id?: Number;
   title: string;
   price: string;
   currencyCode: string;
@@ -21,7 +22,9 @@ export type FormState = {
 
 type Props = {
   categories: string[];
+  data?: FormState;
   onSuccess?: () => void;
+  edit?: Boolean;
 };
 
 function getFileExtension(file: File): string {
@@ -45,25 +48,22 @@ function getFileExtension(file: File): string {
 
 }
 
+const extractKey = (url: string) => {
+  try {
+    const u = new URL(url);
+    return u.pathname.replace(/^\/+/, ""); 
+  } catch {
+    return url; 
+  }
+};
+
 
 const currencyList = ["USD", "IDR", "CNY", "RM", "SGD"];
 
-export default function CreateProductForm({
+export default function ProductForm({
   categories,
   onSuccess,
-}: Props) {
-  const [status, setStatus] = useState<Status>("idle");
-  const [error, setError] = useState<string | null>(null);
-  const [pictureUrls, setPictureUrls] = useState<string[]>([]);
-  const [images, setImages] = useState<string[]>([]);
-
-
-  const titleRef = useRef<HTMLInputElement>(null);
-  const priceRef = useRef<HTMLInputElement>(null);
-  const categoryRef = useRef<HTMLInputElement>(null);
-  const descRef = useRef<HTMLTextAreaElement>(null);
-
-  const [form, setForm] = useState<FormState>({
+  data = {
     title: "",
     price: "",
     currencyCode: "USD",
@@ -71,7 +71,21 @@ export default function CreateProductForm({
     categoryName: "",
     pictureUrls: [],
     isActive: true,
-  });
+  },
+  edit = false 
+}: Props) {
+  const [status, setStatus] = useState<Status>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [images, setImages] = useState<string[]>(data.pictureUrls);
+
+
+  const titleRef = useRef<HTMLInputElement>(null);
+  const priceRef = useRef<HTMLInputElement>(null);
+  const categoryRef = useRef<HTMLInputElement>(null);
+  const descRef = useRef<HTMLTextAreaElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  const [form, setForm] = useState<FormState>(data);
 
   const [categoryInput, setCategoryInput] = useState("");
   const [showSuggestion, setShowSuggestion] = useState(false);
@@ -91,6 +105,15 @@ export default function CreateProductForm({
     }));
   };
 
+  useEffect(() => {
+    if (error && errorRef.current) {
+      errorRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center", 
+      });
+    }
+  }, [error]);
+
   const selectCategory = (value: string) => {
     setValue("categoryName", value);
     setCategoryInput("");
@@ -100,7 +123,52 @@ export default function CreateProductForm({
   const clearCategory = () => {
     setValue("categoryName", "");
     setCategoryInput("");
-    setShowSuggestion(true);
+  };
+
+  const handleEdit = async (e: React.SubmitEvent) => {
+    e.preventDefault();
+    setStatus("loading")
+    setError(null);
+
+    const payload: ReqProduct = {
+      title: form.title,
+      price: Number(form.price),
+      currencyCode: form.currencyCode,
+      description: form.description,
+      categoryName:(form.categoryName || categoryInput).trim() || null,
+      pictureUrls: images.map(extractKey),
+      isActive: form.isActive,
+      quantity: 1,
+    };
+
+    if (!form.id) {
+      setError("Oops, it seems like the product cant be modified for now")
+      return
+    }
+
+
+    try {
+      await editProduct(payload, form.id);
+      setStatus("success");
+
+      setForm({
+        title: "",
+        price: "",
+        currencyCode: "USD",
+        description: "",
+        categoryName: "",
+        pictureUrls: [],
+        isActive: true,
+      });
+
+      onSuccess?.();
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Unknown error";
+
+      setError(message);
+      setStatus("error");
+    }
   };
 
   const handleSubmit = async (e: React.SubmitEvent) => {
@@ -112,7 +180,7 @@ export default function CreateProductForm({
       currencyCode: form.currencyCode,
       description: form.description,
       categoryName:(form.categoryName || categoryInput).trim() || null,
-      pictureUrls: pictureUrls,
+      pictureUrls: images.map(extractKey),
       isActive: form.isActive,
       quantity: 1,
     };
@@ -143,6 +211,7 @@ export default function CreateProductForm({
       setStatus("error");
     }
   };
+  
   const nextOnEnter = (
     e: React.KeyboardEvent,
     nextRef?: React.RefObject<
@@ -157,9 +226,13 @@ export default function CreateProductForm({
       }
     }
   };
+  const handleRemoveImage = (indexToRemove: Number) => {
+    setImages((prev) => prev.filter((_, i) => i !== indexToRemove));
+  };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
+      setError(null);
       if (!file) {
         setError("Cant read File")
         return
@@ -169,13 +242,16 @@ export default function CreateProductForm({
       const signedUrl = await getUploadProductSignedUrl(ext);
       await uploadS3(signedUrl.s3SignedUrl, file, file.type)
       setImages((prev) => [...prev, signedUrl.url]);
-      setPictureUrls((prev) => [...prev, signedUrl.key]);
       
     } catch (error) {
       if (error instanceof Error){
         setError(error.message)
-      }
+
+      } else {
         setError("Something Unexpected Happend")
+      }
+    } finally {
+      e.target.value = "";
     }
 
   };
@@ -184,14 +260,26 @@ export default function CreateProductForm({
     "border-b border-gray-300 focus-within:border-black focus-within:shadow-[0_2px_0_0_rgba(0,0,0,1)] transition-all";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-7">
+    <div className="relative">
+      {status === "loading" && (
+        <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-50 flex items-center justify-center rounded-2xl">
+          <div className="w-8 h-8 border-2 border-gray-400 border-t-black rounded-full animate-spin" />
+        </div>
+      )}
+
+    <form onSubmit={edit ? handleEdit : handleSubmit} 
+      className={`space-y-7 transition ${
+          status === "loading" ? "opacity-50 pointer-events-none" : ""
+        }`}
+    >
       {error && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div  ref={errorRef} className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
           {error}
         </div>
       )}
 
       <div className={underline}>
+        <p className="font-bold"> Title </p>
         <input
           ref={titleRef}
           value={form.title}
@@ -203,8 +291,9 @@ export default function CreateProductForm({
         />
       </div>
 
-      <div className="grid gap-5 grid-cols-[1fr_5fr]">
 
+      <p className="font-bold"> Price </p>
+      <div className="grid gap-5 grid-cols-[1fr_5fr]">
         <div className={underline}>
           <select
             value={form.currencyCode}
@@ -231,6 +320,8 @@ export default function CreateProductForm({
           />
         </div>
       </div>
+
+      <p className="font-bold"> Category </p>
       <div className="relative">
         <div className={underline}>
           {!form.categoryName ? (
@@ -285,7 +376,10 @@ export default function CreateProductForm({
                 <button
                   key={item}
                   type="button"
-                  onClick={() => selectCategory(item)}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    selectCategory(item);
+                  }}
                   className="w-full text-left px-4 py-3 hover:bg-gray-50 transition"
                 >
                   {item}
@@ -296,9 +390,10 @@ export default function CreateProductForm({
       </div>
 
       <div className={underline}>
+      <p className="font-bold"> Description </p>
         <textarea
           ref={descRef}
-          rows={10}
+          rows={4}
           value={form.description}
           onChange={(e) =>
             setValue("description", e.target.value)
@@ -310,7 +405,7 @@ export default function CreateProductForm({
       { form.description && (
       <div className="prose max-w-none overflow-auto">
       <p className="font-bold"> Description Preview (markdown): </p>
-        <div className="border border-gray-300 p-1 m-2 -px-5">
+        <div className="border border-gray-300 px-4 m-2 ">
           <Markdown 
             remarkPlugins={[remarkGfm]}
             rehypePlugins={[rehypeRaw]}
@@ -354,15 +449,21 @@ export default function CreateProductForm({
       <div className="flex flex-wrap gap-4">
 
         {images.map((src, index) => (
-          <div
-            key={index}
-            className="w-28 h-28 rounded-xl overflow-hidden bg-gray-100"
-          >
-            <img
-              src={src}
-              alt={`upload-${index}`}
-              className="w-full h-full object-cover"
-            />
+          <div key={index} className="relative w-28 h-28">
+            <div className="w-full h-full rounded-xl overflow-hidden bg-gray-100">
+              <img
+                src={src}
+                alt={`upload-${index}`}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div
+              onClick={() => handleRemoveImage(index)}
+              className="absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 z-10"
+            >
+              −
+            </div>
           </div>
         ))}
 
@@ -384,16 +485,12 @@ export default function CreateProductForm({
         className="w-full rounded-2xl bg-black text-white py-3 hover:bg-gray-800 transition disabled:opacity-60"
       >
         {status === "loading"
-          ? "Creating..."
-          : "Create Commission"}
+          ? edit ? "Editing..." : "Creating..." 
+          : edit ? "Edit Comission" : "Create Commission"}
       </button>
 
-      {status === "success" && (
-        <p className="text-sm text-green-600">
-          Product created successfully.
-        </p>
-      )}
     </form>
+  </div>
   );
 }
 

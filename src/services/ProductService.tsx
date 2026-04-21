@@ -1,4 +1,4 @@
-import { apiGet, apiPost } from "./ApiService"
+import { apiGet, apiPost, apiPut } from "./ApiService"
 import type { Product, ReqProduct, UploadProductPictureUrl } from "../types/Products";
 import { handleApiError } from "../hooks/ApiErr";
 
@@ -35,7 +35,19 @@ export const submitProduct = async (product: ReqProduct) => {
   try {
     const res = await apiPost<Product>("/products", product);
     if (!res.success || !res.data) {
-      throw new Error(res?.error?.details ?? "Failed to fetch products, something unexpected happend");
+      throw new Error(res?.error?.details ?? "Failed to submit products, something unexpected happend");
+    }
+  } catch (err) {
+    throw handleApiError(err)
+  }
+
+}
+
+export const editProduct = async (product: ReqProduct, id: Number) => {
+  try {
+    const res = await apiPut<Product>(`/products/${id}`, product);
+    if (!res.success || !res.data) {
+      throw new Error(res?.error?.details ?? "Failed to edit products, something unexpected happend");
     }
   } catch (err) {
     throw handleApiError(err)

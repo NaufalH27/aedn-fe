@@ -22,7 +22,6 @@ export async function uploadS3(s3Url: string, file: File, mimeType: string) {
         throw new Error("Something UNexpected Happend in the server. Please try again later");
       }
 
-      throw new Error("Request failed: " + err.message);
     }
     throw new Error("Something Unexpected happend when trying to connect file server. Please try again later")
   }

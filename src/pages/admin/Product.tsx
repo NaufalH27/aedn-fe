@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAllProducts } from "../../services/ProductService";
 import type { Product } from "../../types/Products";
-import CreateProductForm from "./CreateProductForm";
+import ProductForm from "./ProductForm";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -9,6 +9,7 @@ export default function ProductPage() {
   const [status, setStatus] = useState<Status>("loading");
   const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [confirmClose, setConfirmClose] = useState(false);
 
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [openCreateModal, setOpenCreateModal] = useState(false);
@@ -22,14 +23,6 @@ export default function ProductPage() {
 
     try {
       var data = await getAllProducts();
-      for (const d of data) {
-        if (d.pictureUrls.length === 0) {
-            d.pictureUrls = [
-              "https://upload-os-bbs.hoyolab.com/upload/2025/06/22/17138284/4329c2edf6213b9ad1c9a605afd366a6_4185052829146806197.jpeg"
-            ];
-
-        }
-      }
 
       data.sort((a, b) => Number(b.isActive) - Number(a.isActive));
       setProducts(data);
@@ -149,27 +142,28 @@ export default function ProductPage() {
               className={`text-left rounded-2xl border border-gray-200 bg-white hover:border-black hover:shadow-sm transition min-h-70 grid grid-rows-[5fr_3fr] overflow-hidden ${ !product.isActive ? "opacity-60" : "" }`}
             >
 
-            <div className="bg-cover bg-center bg-no-repeat p-4"
-              style={{
-                backgroundImage: `url(${product.pictureUrls[0]})`,
-              }}
-            >
-              <div className="flex justify-between  flex-row-reverse mb-6">
-                <span
-                  className={`text-xs font-medium px-3 py-1 rounded-full ${
-                    product.isActive ? "bg-gray-100 text-black" : "text-black bg-gray-200"
-                  }`}
-                >
+            <div className="relative p-4">
+              <img
+                src={product.pictureUrls[0] ?? "/static/placeholder.jpg"}
+                alt={product.title}
+                className="absolute inset-0 w-full h-full object-cover"
+                onError={(e) => {
+                  e.currentTarget.onerror = null; 
+                  e.currentTarget.src = "/static/placeholder.jpg";
+                }}
+              />
+              <div className="relative flex justify-between flex-row-reverse mb-6">
+                <span className={`text-xs font-medium px-3 py-1 rounded-full ${
+                  product.isActive ? "bg-gray-100 text-black" : "bg-gray-200 text-black"
+                }`}>
                   {product.isActive ? "Open" : "Closed"}
                 </span>
 
-                {!product?.category || product?.category.name !== ""  && (
-                    <span className="text-xs px-3 py-1 rounded-full bg-gray-100">
-                      {product.category?.name}
-                    </span>
-
-                ) }
-
+                {product?.category?.name && (
+                  <span className="text-xs px-3 py-1 rounded-full bg-gray-100">
+                    {product.category.name}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -189,28 +183,81 @@ export default function ProductPage() {
       )}
 
       {openCreateModal && (
-        <Modal onClose={() => setOpenCreateModal(false)} title="Create New Comission" size="lg">
+        <Modal onClose={() => setConfirmClose(true)} title="Create New Comission" size="full">
         <div
-          className={`w-full max-h-[90vh] overflow-y-auto rounded-3xl`}
+          className={`w-full max-h-[90vh] overflow-y-auto`}
           >
-        <CreateProductForm
+        <ProductForm
         categories={categories.filter((c) => c !== "All")}
          onSuccess={async () => {
           setOpenCreateModal(false);
           await handleGetAll();
         }}>
-        </CreateProductForm>
+        </ProductForm>
           </div>
         </Modal>
       )}
 
       {selectedProduct && (
         <Modal
-          onClose={() => setSelectedProduct(null)}
-          title={selectedProduct.title}
+          onClose={() => setConfirmClose(true)}
+          title={"Edit's " + selectedProduct.title}
+          size="full"
         >
-          <div className="h-72 rounded-2xl border border-dashed border-gray-300 flex items-center justify-center text-gray-400">
-            Blank Canvas
+        <div
+          className={`w-full max-h-[90vh] overflow-y-auto`}
+          >
+            <ProductForm
+            edit={ true }
+            categories={categories.filter((c) => c !== "All")}
+            data= {{
+              id: selectedProduct.id,
+              title: selectedProduct.title,
+              price: selectedProduct.price.toString(),
+              currencyCode: selectedProduct.currencyCode,
+              description: selectedProduct.description,
+              categoryName: selectedProduct.category?.name ?? "",
+              pictureUrls: selectedProduct.pictureUrls,
+              isActive: selectedProduct.isActive,
+            }}
+             onSuccess={async () => {
+              setSelectedProduct(null);
+              await handleGetAll();
+            }}>
+        </ProductForm>
+          </div>
+        </Modal>
+      )}
+      {confirmClose && (
+        <Modal
+          title="Discard changes?"
+          size="sm"
+          onClose={() => setConfirmClose(false)}
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Your changes will be lost. Are you sure you want to close?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmClose(false)}
+                className="px-4 py-2 border rounded-lg cursor-pointer"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={() => {
+                  setConfirmClose(false);
+                  setSelectedProduct(null); 
+                  setOpenCreateModal(false)
+                }}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg cursor-pointer"
+              >
+                Discard
+              </button>
+            </div>
           </div>
         </Modal>
       )}
@@ -240,16 +287,16 @@ function Modal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-5">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-5 rounded">
       <div
-        className={`w-full ${sizeClass[size]} rounded-3xl bg-white p-6 shadow-2xl`}
+        className={`w-full ${sizeClass[size]} bg-white rounded-2xl flex flex-col max-h-[90vh] p-5`}
       >
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-semibold">{title}</h2>
 
           <button
             onClick={onClose}
-            className="w-10 h-10 rounded-full hover:bg-gray-100 transition"
+            className="w-10 h-10 hover:bg-gray-100 transition"
           >
             ✕
           </button>

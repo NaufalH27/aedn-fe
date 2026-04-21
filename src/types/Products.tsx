@@ -9,6 +9,7 @@ export type Product = {
   price: number;
   urlSlug: string;
   quantity: number;
+  description: string;
   category: CategoryDto | null;
   currencyCode: string;
   createdAt: string; 

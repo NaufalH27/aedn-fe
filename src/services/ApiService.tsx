@@ -27,6 +27,11 @@ export async function apiPost<T>(url: string, body?: any): Promise<ApiResponse<T
   return res.data;
 }
 
+export async function apiPut<T>(url: string, body?: any): Promise<ApiResponse<T>> {
+  const res = await api.put<ApiResponse<T>>(url, body);
+  return res.data;
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
