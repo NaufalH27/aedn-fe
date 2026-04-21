@@ -14,9 +14,10 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
-  const status = useAuthCheck(roles);
+  const { status, error } = useAuthCheck(roles);
 
   if (status === "loading") return <div>Loading...</div>;
+  if (status === "error") return <div>{error}</div>;
   if (status === "unauthenticated") return <div>unauthenticated</div>;
   if (status === "unauthorized") return <div>unauthorized</div>;
 

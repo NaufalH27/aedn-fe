@@ -1,7 +1,6 @@
-import { apiGet } from "./ApiService"
-import type { Product } from "../types/Products";
-import axios, { AxiosError } from "axios";
-import type { ApiResponse } from "../types/ApiResponse";
+import { apiGet, apiPost } from "./ApiService"
+import type { Product, ReqProduct, UploadProductPictureUrl } from "../types/Products";
+import { handleApiError } from "../hooks/ApiErr";
 
 export const getAllProducts = async (): Promise<Product[]> => {
   try {
@@ -12,12 +11,34 @@ export const getAllProducts = async (): Promise<Product[]> => {
     return res.data;
 
   } catch (err) {
-    if (axios.isAxiosError(err)) {
-      const axiosErr = err as AxiosError<ApiResponse<unknown>>;
-      throw new Error(axiosErr.response?.data?.error?.details ?? "Failed to fetch products (500)");
+    throw handleApiError(err)
+  }
+};
+
+export const getUploadProductSignedUrl = async (imageExtension: string): Promise<UploadProductPictureUrl> => {
+  try {
+
+    const res = await apiPost<UploadProductPictureUrl>("/product/picture/signed-url/upload", {imageExtension: imageExtension} );
+    if (!res.success || !res.data) {
+      throw new Error(res?.error?.details ?? "Failed to get upload url, something unexpected Happend");
     }
 
-    throw err;
+    return res.data
+
+  } catch (err) {
+    throw handleApiError(err)
   }
 
-};
+}
+
+export const submitProduct = async (product: ReqProduct) => {
+  try {
+    const res = await apiPost<Product>("/products", product);
+    if (!res.success || !res.data) {
+      throw new Error(res?.error?.details ?? "Failed to fetch products, something unexpected happend");
+    }
+  } catch (err) {
+    throw handleApiError(err)
+  }
+
+}

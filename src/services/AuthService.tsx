@@ -3,39 +3,50 @@ import { apiPost } from "./ApiService"
 import useAuthStore from '../store/AuthStore'
 import type { AuthToken } from "../types/AuthToken";
 import type { ApiResponse } from "../types/ApiResponse";
+import { handleApiError } from "../hooks/ApiErr";
 
 export const signup = async (username: string, email: string, password: string, fullName: string ) => {
-  const redirectUrl = `${window.location.origin}/verify-email`
-  const data = {
-    username,
-    email,
-    password,
-    fullName,
-    redirectUrl
-  };
-  const res = await apiPost<AuthToken>("/auth/signup", data);
-  if (!res.success || !res.data) {
-    throw new Error(`signup Failed: ${res.error?.details}`);
+  try {
+    const redirectUrl = `${window.location.origin}/verify-email`
+    const data = {
+      username,
+      email,
+      password,
+      fullName,
+      redirectUrl
+    };
+    const res = await apiPost<AuthToken>("/auth/signup", data);
+    if (!res.success || !res.data) {
+      throw new Error(`signup Failed: ${res.error?.details}`);
+    }
+  } catch (err) {
+    handleApiError(err)
+
   }
 };
 
 export const login = async (username: string, email: string, password: string, loginMethod: string ) => {
-  const data = {
-    username,
-    email,
-    password,
-    loginMethod,
-  };
-  const res = await apiPost<AuthToken>("/auth/login", data);
-  if (!res.success || !res.data) {
-    throw new Error(`Login Failed: ${res.error?.details}`);
-  }
-  const accessToken = res.data.accessToken
-  const refreshToken = res.data.refreshToken
+  try {
+    const data = {
+      username,
+      email,
+      password,
+      loginMethod,
+    };
+    const res = await apiPost<AuthToken>("/auth/login", data);
+    if (!res.success || !res.data) {
+      throw new Error(`Login Failed: ${res.error?.details}`);
+    }
+    const accessToken = res.data.accessToken
+    const refreshToken = res.data.refreshToken
 
-  useAuthStore.getState().setAccessToken(accessToken);
-  localStorage.setItem("refreshToken", refreshToken);
-  return accessToken
+    useAuthStore.getState().setAccessToken(accessToken);
+    localStorage.setItem("refreshToken", refreshToken);
+    return accessToken
+
+  } catch (err) {
+    throw handleApiError(err)
+  }
 };
 
 export const logout = () => {
@@ -77,7 +88,6 @@ export const refreshAccessToken = async (refreshToken: string) => {
         throw new Error(axiosErr.response?.data?.error?.details ?? "Invalid Session, Please Login Again");
       }
     }
-
-    throw err;
+    throw handleApiError(err)
   }
 };

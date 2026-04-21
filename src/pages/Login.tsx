@@ -70,20 +70,8 @@ function Login() {
         navigate("/");
       }
     } catch (err) {
-      console.error("Login failed:", err);
-      if (err instanceof AxiosError) {
-        if (err.response) {
-          setError(
-            (err.response.data?.error?.details ||
-              err.response.data?.message ||
-              "Request failed" ) + ` (${err.response.status})`
-          );
-        } else {
-          setError("Server is unreachable");
-        }
-
-      } else if (err instanceof Error) {
-        setError(err.message);
+        if (err instanceof Error) {
+          setError(err.message);
       } else {
         setError("Something unexpected happend");
       }

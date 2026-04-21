@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getAllProducts } from "../../services/ProductService";
 import type { Product } from "../../types/Products";
+import CreateProductForm from "./CreateProductForm";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -13,13 +14,23 @@ export default function ProductPage() {
   const [openCreateModal, setOpenCreateModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
+
+
   const handleGetAll = async () => {
     setStatus("loading");
     setError(null);
 
     try {
       var data = await getAllProducts();
-      data[1].isActive = false
+      for (const d of data) {
+        if (d.pictureUrls.length === 0) {
+            d.pictureUrls = [
+              "https://upload-os-bbs.hoyolab.com/upload/2025/06/22/17138284/4329c2edf6213b9ad1c9a605afd366a6_4185052829146806197.jpeg"
+            ];
+
+        }
+      }
+
       data.sort((a, b) => Number(b.isActive) - Number(a.isActive));
       setProducts(data);
       setStatus("success");
@@ -33,17 +44,22 @@ export default function ProductPage() {
   useEffect(() => {
     handleGetAll();
   }, []);
-
   const categories = useMemo(() => {
-    const names = products.map((p) => p.category.name);
-    return ["All", ...Array.from(new Set(names))];
+      const names = products
+      .map((p) => p.category?.name?.trim())
+      .filter((name): name is string => !!name);
+
+      if (names.length === 0) return [];
+
+      return ["All", ...Array.from(new Set(names))];
   }, [products]);
+
 
   const filteredProducts = useMemo(() => {
     if (selectedCategory === "All") return products;
 
     return products.filter(
-      (product) => product.category.name === selectedCategory
+      (product) => product.category?.name === selectedCategory
     );
   }, [products, selectedCategory]);
 
@@ -59,17 +75,17 @@ export default function ProductPage() {
           </p>
         </div>
 
-<button
-  onClick={() => setOpenCreateModal(true)}
-  className="px-5 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 hover:cursor-pointer transition-colors duration-200"
->
-  <div className="flex gap-2">
-    <p>+</p>
-    <p>Comission</p>
-  </div>
-</button>
+        <button
+          onClick={() => setOpenCreateModal(true)}
+          className="px-5 py-2.5 bg-black text-white rounded-xl hover:bg-gray-800 hover:cursor-pointer transition-colors duration-200"
+        >
+          <div className="flex gap-2">
+            <p>+</p>
+            <p>Comission</p>
+          </div>
+        </button>
 
-</div>
+        </div>
 
       <div className="flex gap-3 overflow-x-auto pb-2 mb-8">
         {categories.map((category) => {
@@ -127,25 +143,37 @@ export default function ProductPage() {
       {status === "success" && filteredProducts.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {filteredProducts.map((product) => (
-            <button
+            <div
               key={product.id}
               onClick={() => setSelectedProduct(product)}
-              className="text-left p-5 rounded-2xl border border-gray-200 bg-white hover:border-black hover:shadow-sm transition"
+              className={`text-left rounded-2xl border border-gray-200 bg-white hover:border-black hover:shadow-sm transition min-h-70 grid grid-rows-[5fr_3fr] overflow-hidden ${ !product.isActive ? "opacity-60" : "" }`}
             >
-              <div className="flex items-start justify-between mb-6">
-                <span className="text-xs px-3 py-1 rounded-full bg-gray-100">
-                  {product.category.name}
-                </span>
 
+            <div className="bg-cover bg-center bg-no-repeat p-4"
+              style={{
+                backgroundImage: `url(${product.pictureUrls[0]})`,
+              }}
+            >
+              <div className="flex justify-between  flex-row-reverse mb-6">
                 <span
-                  className={`text-xs font-medium ${
-                    product.isActive ? "text-black" : "text-gray-400"
+                  className={`text-xs font-medium px-3 py-1 rounded-full ${
+                    product.isActive ? "bg-gray-100 text-black" : "text-black bg-gray-200"
                   }`}
                 >
-                  {product.isActive ? "Active" : "Inactive"}
+                  {product.isActive ? "Open" : "Closed"}
                 </span>
-              </div>
 
+                {!product?.category || product?.category.name !== ""  && (
+                    <span className="text-xs px-3 py-1 rounded-full bg-gray-100">
+                      {product.category?.name}
+                    </span>
+
+                ) }
+
+              </div>
+            </div>
+
+            <div className="pl-5 pt-3">
               <h2 className="text-lg font-semibold line-clamp-1">
                 {product.title}
               </h2>
@@ -153,20 +181,29 @@ export default function ProductPage() {
               <p className="text-gray-400">
                 Start from ${product.price}
               </p>
-            </button>
+            </div>
+
+            </div>
           ))}
         </div>
       )}
 
       {openCreateModal && (
-        <Modal onClose={() => setOpenCreateModal(false)} title="Create Product">
-          <div className="h-72 rounded-2xl border border-dashed border-gray-300 flex items-center justify-center text-gray-400">
-            Blank Canvas
+        <Modal onClose={() => setOpenCreateModal(false)} title="Create New Comission" size="lg">
+        <div
+          className={`w-full max-h-[90vh] overflow-y-auto rounded-3xl`}
+          >
+        <CreateProductForm
+        categories={categories.filter((c) => c !== "All")}
+         onSuccess={async () => {
+          setOpenCreateModal(false);
+          await handleGetAll();
+        }}>
+        </CreateProductForm>
           </div>
         </Modal>
       )}
 
-      {/* Product Detail Modal */}
       {selectedProduct && (
         <Modal
           onClose={() => setSelectedProduct(null)}
@@ -185,12 +222,28 @@ type ModalProps = {
   title: string;
   children: React.ReactNode;
   onClose: () => void;
+  size?: "sm" | "md" | "lg" | "xl" | "full";
 };
 
-function Modal({ title, children, onClose }: ModalProps) {
+function Modal({
+  title,
+  children,
+  onClose,
+  size = "md",
+}: ModalProps) {
+  const sizeClass = {
+    sm: "max-w-md",
+    md: "max-w-xl",
+    lg: "max-w-2xl",
+    xl: "max-w-4xl",
+    full: "max-w-6xl",
+  };
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-5">
-      <div className="w-full max-w-xl rounded-3xl bg-white p-6 shadow-2xl">
+      <div
+        className={`w-full ${sizeClass[size]} rounded-3xl bg-white p-6 shadow-2xl`}
+      >
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-semibold">{title}</h2>
 

@@ -6,10 +6,19 @@ type AuthStatus =
   | "loading"
   | "authenticated"
   | "unauthenticated"
-  | "unauthorized";
+  | "unauthorized"
+  | "error";
 
-export const useAuthCheck = (requiredRoles?: string[]) => {
+type UseAuthCheckResult = {
+  status: AuthStatus;
+  error: string | null;
+};
+
+export const useAuthCheck = (
+  requiredRoles?: string[]
+): UseAuthCheckResult => {
   const [status, setStatus] = useState<AuthStatus>("loading");
+  const [error, setError] = useState<string | null>(null);
   const hasRun = useRef(false);
 
   useEffect(() => {
@@ -39,9 +48,9 @@ export const useAuthCheck = (requiredRoles?: string[]) => {
         if (requiredRoles) {
           const roles = useAuthStore.getState().roles;
 
-          const hasRole = requiredRoles.some((r) => roles.includes(r));
-          console.info(roles)
-          console.info(requiredRoles)
+          const hasRole = requiredRoles.some((r) =>
+            roles.includes(r)
+          );
 
           if (!hasRole) {
             setStatus("unauthorized");
@@ -50,13 +59,19 @@ export const useAuthCheck = (requiredRoles?: string[]) => {
         }
 
         setStatus("authenticated");
-      } catch {
-        setStatus("unauthenticated");
+      } catch (err) {
+        setStatus("error");
+
+        if (err instanceof Error) {
+          setError(err.message);
+        } else {
+          setError("Something unexpected happened");
+        }
       }
     };
 
     checkAuth();
-  }, []);
+  }, [requiredRoles]);
 
-  return status;
+  return { status, error };
 };

@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { signup } from "../services/AuthService";
-import { AxiosError } from "axios";
 
 function Signup() {
   const usernameRegex = /^[a-zA-Z0-9]+$/;
@@ -50,20 +49,8 @@ function Signup() {
         form.fullName
       );
     } catch (err) {
-      console.error("Signup failed:", err);
-      if (err instanceof AxiosError) {
-        if (err.response) {
-          setError(
-            (err.response.data?.error?.details ||
-              err.response.data?.message ||
-              "Request failed" ) + ` (${err.response.status})`
-          );
-        } else {
-          setError("Server is unreachable");
-        }
-
-      } else if (err instanceof Error) {
-        setError(err.message);
+      if (err instanceof Error) {
+          setError(err.message);
       } else {
         setError("Something unexpected happend");
       }
