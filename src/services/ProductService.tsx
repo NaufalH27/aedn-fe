@@ -15,6 +15,18 @@ export const getAllProducts = async (): Promise<Product[]> => {
   }
 };
 
+export const getProductById = async (pId: string): Promise<Product> => {
+  try {
+    const res = await apiGet<Product>(`/products/${pId}`);
+    if (!res.success || !res.data) {
+      throw new Error(res?.error?.details ?? "Failed to fetch products, something unexpected happend");
+    }
+    return res.data;
+  } catch (err) {
+    throw handleApiError(err)
+  }
+};
+
 export const getUploadProductSignedUrl = async (imageExtension: string): Promise<UploadProductPictureUrl> => {
   try {
 

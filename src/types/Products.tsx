@@ -15,6 +15,7 @@ export type Product = {
   createdAt: string; 
   isActive: boolean;
   pictureUrls: string[];
+  isBookmarked?: boolean;
 }
 
 export type ReqProduct = {

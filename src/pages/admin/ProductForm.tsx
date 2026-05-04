@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react"; 
 import type { ReqProduct } from "../../types/Products";
 import { editProduct, getUploadProductSignedUrl, submitProduct } from "../../services/ProductService";
 import Markdown from 'react-markdown'
@@ -169,6 +169,16 @@ export default function ProductForm({
       setError(message);
       setStatus("error");
     }
+  };
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const el = e.target;
+      el.style.height = "auto";
+
+      const minHeight = 100; // ~4 rows
+      const maxHeight = 200; // ~8 rows
+
+      el.style.height = Math.min(Math.max(el.scrollHeight, minHeight), maxHeight) + "px";
   };
 
   const handleSubmit = async (e: React.SubmitEvent) => {
@@ -390,17 +400,18 @@ export default function ProductForm({
       </div>
 
       <div className={underline}>
-      <p className="font-bold"> Description </p>
+        <p className="font-bold"> Description </p>
         <textarea
           ref={descRef}
-          rows={4}
           value={form.description}
-          onChange={(e) =>
-            setValue("description", e.target.value)
-          }
+          onChange={(e) => {
+            setValue("description", e.target.value);
+            handleInput(e);
+          }}
           placeholder="Description"
-          className="w-full py-3 outline-none bg-transparent resize-none"
+          className="w-full py-3 outline-none bg-transparent resize-none overflow-y-auto"
         />
+
       </div>
       { form.description && (
       <div className="prose max-w-none overflow-auto">

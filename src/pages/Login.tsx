@@ -4,7 +4,6 @@ import { login } from "../services/AuthService";
 import { jwtDecode } from "jwt-decode";
 import useAuthStore from "../store/AuthStore";
 import type { DecodedToken } from "../types/Auth";
-import { AxiosError } from "axios";
 
 type LoginMethod = "username" | "email";
 

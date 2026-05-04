@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getAllProducts } from "../../services/ProductService";
 import type { Product } from "../../types/Products";
 import ProductForm from "./ProductForm";
+import Modal from "../../components/modal";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -74,7 +75,7 @@ export default function ProductPage() {
         >
           <div className="flex gap-2">
             <p>+</p>
-            <p>Comission</p>
+            <p>Comission</p>pro
           </div>
         </button>
 
@@ -129,7 +130,7 @@ export default function ProductPage() {
 
       {status === "success" && filteredProducts.length === 0 && (
         <div className="border border-dashed border-gray-300 rounded-2xl p-10 text-center text-gray-400">
-          No products found.
+          No Comission found.
         </div>
       )}
 
@@ -173,7 +174,7 @@ export default function ProductPage() {
               </h2>
 
               <p className="text-gray-400">
-                Start from ${product.price}
+                Start from {product.currencyCode}{product.price}
               </p>
             </div>
 
@@ -265,45 +266,3 @@ export default function ProductPage() {
   );
 }
 
-type ModalProps = {
-  title: string;
-  children: React.ReactNode;
-  onClose: () => void;
-  size?: "sm" | "md" | "lg" | "xl" | "full";
-};
-
-function Modal({
-  title,
-  children,
-  onClose,
-  size = "md",
-}: ModalProps) {
-  const sizeClass = {
-    sm: "max-w-md",
-    md: "max-w-xl",
-    lg: "max-w-2xl",
-    xl: "max-w-4xl",
-    full: "max-w-6xl",
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-5 rounded">
-      <div
-        className={`w-full ${sizeClass[size]} bg-white rounded-2xl flex flex-col max-h-[90vh] p-5`}
-      >
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-semibold">{title}</h2>
-
-          <button
-            onClick={onClose}
-            className="w-10 h-10 hover:bg-gray-100 transition"
-          >
-            ✕
-          </button>
-        </div>
-
-        {children}
-      </div>
-    </div>
-  );
-}
