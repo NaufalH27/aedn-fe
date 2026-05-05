@@ -1,5 +1,6 @@
 
 import React from "react";
+import ErrorRedBox from "./error-red-box";
 
 type ErrorStateProps = {
   message: string;
@@ -13,9 +14,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
 }) => {
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4 p-8">
-      <div className="rounded-xl border border-red-200 bg-red-50 px-6 py-4 text-red-600 text-sm max-w-sm text-center">
-        {message}
-      </div>
+      <ErrorRedBox message={message}/>
 
       {onRetry && (
         <button

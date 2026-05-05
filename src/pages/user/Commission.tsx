@@ -8,6 +8,13 @@ import { getProductById } from "../../services/ProductService";
 import LoadingPoage from "../../components/loading-page";
 import ErrorState from "../../components/error-page";
 import Breadcrumbs from "../../components/breadcrumbs";
+import { formatCurrency } from "../../helper/currency";
+import CommissionRequestForm from "../../components/request-form";
+import { useAuthCheck } from "../../hooks/AuthCheck";
+import useAuthStore from "../../store/AuthStore";
+import type { AuthState } from "../../types/Auth";
+import { LoadingIndicator } from "../../components/loading-indicator";
+import ErrorRedBox from "../../components/error-red-box";
 
 const DUMMY_TERMS = `
 ## Terms & Conditions
@@ -32,10 +39,19 @@ const DUMMY_HOW_TO = `
 `;
 
 export default function Commission() {
+  const { status, error } = useAuthCheck();
   const { id } = useParams();
   const [imgIndex, setImgIndex] = useState(0);
   const [accepted, setAccepted] = useState(false);
+  const [expandRequestForm, setExpandRequestForm] = useState(false);
   const touchStartX = useRef<number | null>(null);
+  type requestState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "autheticated"; auth: AuthState }
+  | { status: "unauthenticated" }
+  const [reqState, setReqState] = useState<requestState>({ status: "idle" });
   type CommissionState =
   | { status: "loading" }
   | { status: "error"; message: string }
@@ -54,6 +70,26 @@ export default function Commission() {
       });
     }
   };
+
+  const handleOnRequest = async() => {
+    if (status === "loading") {
+      setReqState({status: "loading"})
+    } else if (status === "unauthenticated") {
+      setReqState({status: "unauthenticated"})
+    } else if (status === "unauthorized") {
+      setReqState({status: "unauthenticated"})
+    } else if (status === "error") {
+      setReqState({status: "error", message: error ?? "Something Unexpected Happened, Please Try Again Later"})
+    } else {
+      const auth = useAuthStore.getState()
+      if (auth.subject === null) {
+        setReqState({status: "unauthenticated"})
+      } else {
+        setReqState({status:"autheticated", auth: auth})
+        setExpandRequestForm(true)
+      }
+    }
+  }
 
   useEffect(() => {
     if (!id) {
@@ -100,13 +136,13 @@ export default function Commission() {
   const isClosed = !data.isActive;
 
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className={"min-h-screen bg-white text-black" + (isClosed ? " opacity-60" : "")}>
       <Breadcrumbs
         dynamicLabels={{
           [id ?? ""]: data?.title ?? id ?? "This Comission",
         }}
       />
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Title row */}
         <div className="flex items-start justify-between mb-8 gap-4">
           <div>
@@ -129,7 +165,7 @@ export default function Commission() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
+        <div className="grid md:grid-cols-1 lg:grid-cols-2 gap-10 items-start">
 
           <div className="space-y-8">
 
@@ -277,11 +313,11 @@ export default function Commission() {
                   Starting price
                 </p>
                 <p className="text-3xl font-bold">
-                  {data.currencyCode ?? "$"}{data.price}
+                  {formatCurrency(data.price, data.currencyCode)}
                 </p>
                 {data.quantity > 0 && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    {data.quantity} slot{data.quantity !== 1 ? "s" : ""} available
+                  <p className="text-sm text-gray-400 mt-1">
+                    * Add-ons Not Included
                   </p>
                 )}
               </div>
@@ -294,9 +330,12 @@ export default function Commission() {
                   <input
                     type="checkbox"
                     checked={accepted}
+                    disabled={isClosed}
                     onChange={(e) => setAccepted(e.target.checked)}
-                    className="sr-only"
-                  />
+                    className={`sr-only ${
+                      isClosed ? "bg-gray-100 text-gray-400" : ""
+                    }`}
+                  /> 
                   <div
                     className={`w-5 h-5 rounded border-2 flex items-center justify-center transition ${
                       accepted
@@ -325,22 +364,43 @@ export default function Commission() {
                 </span>
               </label>
 
-              {/* Request button */}
-              <button
-                disabled={!accepted || isClosed}
-                className={`w-full py-3.5 rounded-xl font-semibold text-sm transition ${
-                  accepted && !isClosed
-                    ? "bg-black text-white hover:bg-gray-800 shadow-sm"
-                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                }`}
-              >
-                {isClosed ? "Commission Closed" : "Request Commission"}
-              </button>
+              {reqState.status === "error" && (
+                <ErrorRedBox message={reqState.message}/>
+              )}
+              {reqState.status === "unauthenticated" && (
+                <ErrorRedBox message="You need to Login to make a request commission"/>
+              )}
 
-              {!accepted && !isClosed && (
-                <p className="text-xs text-gray-400 text-center -mt-2">
-                  Accept the terms above to continue
-                </p>
+              {/* Request button */}
+              {!expandRequestForm && (
+                <>
+                <button
+                  onClick={handleOnRequest}
+                  disabled={!accepted || isClosed}
+                  className={`w-full py-3.5 rounded-xl font-semibold text-sm transition ${
+                    accepted && !isClosed
+                      ? "bg-black text-white hover:bg-gray-800 shadow-sm"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  }`}
+                >
+                  {reqState.status === "loading" ? (
+                    <LoadingIndicator />
+                  ) : isClosed ? (
+                    "Commission Closed"
+                  ) : (
+                    "Request Commission"
+                  )}
+                </button>
+                {!accepted && !isClosed && (
+                  <p className="text-xs text-gray-400 text-center -mt-2">
+                    Accept the terms above to continue
+                  </p>
+                )}
+                </>
+              )}
+
+              {expandRequestForm && reqState.status === "autheticated" && (
+                <CommissionRequestForm authState={reqState.auth} product={state.data}/>
               )}
 
             </div>

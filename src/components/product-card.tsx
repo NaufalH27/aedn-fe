@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Product } from "../types/Products";
+import { formatCurrency } from "../helper/currency";
 
 // user facing
 export function ProductCard({ product, onClick }: { product: Product; onClick: () => void }) {
@@ -120,7 +121,8 @@ export function ProductCard({ product, onClick }: { product: Product; onClick: (
         <div className="min-w-0">
           <h2 className="text-base font-semibold leading-tight line-clamp-1">{product.title}</h2>
           <p className="text-sm text-gray-500 mt-0.5">
-            From {product.currencyCode ?? "$"}{product.price}
+
+          From {formatCurrency(product.price, product.currencyCode)}
           </p>
         </div>
 

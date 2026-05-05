@@ -5,6 +5,7 @@ import Markdown from 'react-markdown'
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { uploadS3 } from "../../services/S3Service";
+import { currencyList } from "../../helper/currency";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -57,8 +58,6 @@ const extractKey = (url: string) => {
   }
 };
 
-
-const currencyList = ["USD", "IDR", "CNY", "RM", "SGD"];
 
 export default function ProductForm({
   categories,
@@ -171,15 +170,20 @@ export default function ProductForm({
     }
   };
 
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const el = e.target;
-      el.style.height = "auto";
+  const resizeTextarea = (el: HTMLTextAreaElement) => {
+    el.style.height = "auto";
 
-      const minHeight = 100; // ~4 rows
-      const maxHeight = 200; // ~8 rows
+    const minHeight = 100;
+    const maxHeight = 200;
 
-      el.style.height = Math.min(Math.max(el.scrollHeight, minHeight), maxHeight) + "px";
+    el.style.height =
+      Math.min(Math.max(el.scrollHeight, minHeight), maxHeight) + "px";
   };
+  useEffect(() => {
+    if (descRef.current) {
+      resizeTextarea(descRef.current);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
@@ -406,7 +410,7 @@ export default function ProductForm({
           value={form.description}
           onChange={(e) => {
             setValue("description", e.target.value);
-            handleInput(e);
+            resizeTextarea(e.target);
           }}
           placeholder="Description"
           className="w-full py-3 outline-none bg-transparent resize-none overflow-y-auto"
