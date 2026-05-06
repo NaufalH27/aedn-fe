@@ -75,7 +75,7 @@ export default function ProductPage() {
         >
           <div className="flex gap-2">
             <p>+</p>
-            <p>Comission</p>pro
+            <p>New Commission</p>
           </div>
         </button>
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { signup } from "../services/AuthService";
 
 function Signup() {
@@ -34,7 +34,7 @@ function Signup() {
     passwordValid &&
     usernameValid &&
     emailValid;
-
+  const navigate = useNavigate()
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setError(null);
@@ -48,6 +48,7 @@ function Signup() {
         form.password,
         form.fullName
       );
+        navigate("/login");
     } catch (err) {
       if (err instanceof Error) {
           setError(err.message);
