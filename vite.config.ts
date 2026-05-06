@@ -3,7 +3,7 @@ import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
 import tailwindcss from '@tailwindcss/vite'
 
-export default defineConfig(({mode}) => {
+export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
     plugins: [
@@ -15,6 +15,7 @@ export default defineConfig(({mode}) => {
       __APP_ENV__: JSON.stringify(env.APP_ENV)
     },
     server: {
+      host : true,
       port: env.APP_PORT ? Number(env.APP_PORT) : 5173
     }
   }

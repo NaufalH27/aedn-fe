@@ -8,6 +8,7 @@ import { useAuthCheck } from "../hooks/AuthCheck";
 import type { ReactNode } from "react";
 import Commission from "../pages/user/Commission";
 import Commissions from "../pages/user/Commissions";
+import Topbar from "../components/topbar";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -28,6 +29,7 @@ const ProtectedRoute = ({ children, roles }: ProtectedRouteProps) => {
 function AppRouter() {
   return (
     <BrowserRouter>
+      <Topbar />
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />

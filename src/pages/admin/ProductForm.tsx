@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useEffect } from "react"; 
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import type { ReqProduct } from "../../types/Products";
 import { editProduct, getUploadProductSignedUrl, submitProduct } from "../../services/ProductService";
 import Markdown from 'react-markdown'
@@ -11,7 +11,7 @@ type Status = "idle" | "loading" | "success" | "error";
 
 
 export type FormState = {
-  id?: Number;
+  id?: string;
   title: string;
   price: string;
   currencyCode: string;
@@ -52,9 +52,9 @@ function getFileExtension(file: File): string {
 const extractKey = (url: string) => {
   try {
     const u = new URL(url);
-    return u.pathname.replace(/^\/+/, ""); 
+    return u.pathname.replace(/^\/+/, "");
   } catch {
-    return url; 
+    return url;
   }
 };
 
@@ -71,7 +71,7 @@ export default function ProductForm({
     pictureUrls: [],
     isActive: true,
   },
-  edit = false 
+  edit = false
 }: Props) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState<string | null>(null);
@@ -108,7 +108,7 @@ export default function ProductForm({
     if (error && errorRef.current) {
       errorRef.current.scrollIntoView({
         behavior: "smooth",
-        block: "center", 
+        block: "center",
       });
     }
   }, [error]);
@@ -134,7 +134,7 @@ export default function ProductForm({
       price: Number(form.price),
       currencyCode: form.currencyCode,
       description: form.description,
-      categoryName:(form.categoryName || categoryInput).trim() || null,
+      categoryName: (form.categoryName || categoryInput).trim() || null,
       pictureUrls: images.map(extractKey),
       isActive: form.isActive,
       quantity: 1,
@@ -193,7 +193,7 @@ export default function ProductForm({
       price: Number(form.price),
       currencyCode: form.currencyCode,
       description: form.description,
-      categoryName:(form.categoryName || categoryInput).trim() || null,
+      categoryName: (form.categoryName || categoryInput).trim() || null,
       pictureUrls: images.map(extractKey),
       isActive: form.isActive,
       quantity: 1,
@@ -225,11 +225,11 @@ export default function ProductForm({
       setStatus("error");
     }
   };
-  
+
   const nextOnEnter = (
     e: React.KeyboardEvent,
     nextRef?: React.RefObject<
-    HTMLInputElement | HTMLTextAreaElement | null
+      HTMLInputElement | HTMLTextAreaElement | null
     >
   ) => {
     if (e.key === "Enter") {
@@ -245,20 +245,20 @@ export default function ProductForm({
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      setError(null);
-      if (!file) {
-        setError("Cant read File")
-        return
-      }
-      const ext = getFileExtension(file)
+    const file = e.target.files?.[0];
+    setError(null);
+    if (!file) {
+      setError("Cant read File")
+      return
+    }
+    const ext = getFileExtension(file)
     try {
       const signedUrl = await getUploadProductSignedUrl(ext);
       await uploadS3(signedUrl.s3SignedUrl, file, file.type)
       setImages((prev) => [...prev, signedUrl.url]);
-      
+
     } catch (error) {
-      if (error instanceof Error){
+      if (error instanceof Error) {
         setError(error.message)
 
       } else {
@@ -281,231 +281,228 @@ export default function ProductForm({
         </div>
       )}
 
-    <form onSubmit={edit ? handleEdit : handleSubmit} 
-      className={`space-y-7 transition ${
-          status === "loading" ? "opacity-50 pointer-events-none" : ""
-        }`}
-    >
-      {error && (
-        <div  ref={errorRef} className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-          {error}
-        </div>
-      )}
+      <form onSubmit={edit ? handleEdit : handleSubmit}
+        className={`space-y-7 transition ${status === "loading" ? "opacity-50 pointer-events-none" : ""
+          }`}
+      >
+        {error && (
+          <div ref={errorRef} className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+            {error}
+          </div>
+        )}
 
-      <div className={underline}>
-        <p className="font-bold"> Title </p>
-        <input
-          ref={titleRef}
-          value={form.title}
-          onChange={(e) => setValue("title", e.target.value)}
-          placeholder="Commission Title"
-          className="w-full py-3 outline-none bg-transparent"
-          required
-          onKeyDown={(e) => nextOnEnter(e, priceRef)}
-        />
-      </div>
-
-
-      <p className="font-bold"> Price </p>
-      <div className="grid gap-5 grid-cols-[1fr_5fr]">
         <div className={underline}>
-          <select
-            value={form.currencyCode}
-            onChange={(e) =>
-              setValue("currencyCode", e.target.value)
-            }
-            className="w-full py-3 outline-none bg-transparent"
-          >
-            {currencyList.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </div>
-        <div className={underline}>
+          <p className="font-bold"> Title </p>
           <input
-            ref={priceRef}
-            type="number"
-            value={form.price}
-            onChange={(e) => setValue("price", e.target.value)}
-            placeholder="Price"
+            ref={titleRef}
+            value={form.title}
+            onChange={(e) => setValue("title", e.target.value)}
+            placeholder="Commission Title"
             className="w-full py-3 outline-none bg-transparent"
-            onKeyDown={(e) => nextOnEnter(e, categoryRef)}
             required
+            onKeyDown={(e) => nextOnEnter(e, priceRef)}
           />
         </div>
-      </div>
 
-      <p className="font-bold"> Category </p>
-      <div className="relative">
-        <div className={underline}>
-          {!form.categoryName ? (
-            <input
-              ref={categoryRef}
-              onKeyDown={(e) => nextOnEnter(e, descRef)}
-              value={categoryInput}
-              onChange={(e) => {
-                setCategoryInput(e.target.value);
-              }}
-              onFocus={() => setShowSuggestion(true)}
-              onBlur={() => {
-                setTimeout(() => setShowSuggestion(false), 150);
-              }}
-              placeholder="Category"
+
+        <p className="font-bold"> Price </p>
+        <div className="grid gap-5 grid-cols-[1fr_5fr]">
+          <div className={underline}>
+            <select
+              value={form.currencyCode}
+              onChange={(e) =>
+                setValue("currencyCode", e.target.value)
+              }
               className="w-full py-3 outline-none bg-transparent"
-            />
-          ) : (
-            <div className="py-2 flex items-center gap-2">
-              <div className="px-4 py-1.5 rounded-full bg-black text-white text-sm flex items-center gap-2">
-                <span>{form.categoryName}</span>
-
-                <button
-                  type="button"
-                  onClick={clearCategory}
-                  className="hover:opacity-70"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {!showSuggestion &&
-          !form.categoryName &&
-          categoryInput.trim() &&
-          !filteredCategories.some(
-            (item) =>
-              item.toLowerCase() ===
-              categoryInput.trim().toLowerCase()
-          ) && (
-            <p className="mt-2 text-sm text-red-500">
-              * New Category
-            </p>
-        )}
-        {showSuggestion &&
-          !form.categoryName &&
-          filteredCategories.length > 0 && (
-            <div className="absolute z-30 mt-2 w-full rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
-              {filteredCategories.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    selectCategory(item);
-                  }}
-                  className="w-full text-left px-4 py-3 hover:bg-gray-50 transition"
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          )}
-      </div>
-
-      <div className={underline}>
-        <p className="font-bold"> Description </p>
-        <textarea
-          ref={descRef}
-          value={form.description}
-          onChange={(e) => {
-            setValue("description", e.target.value);
-            resizeTextarea(e.target);
-          }}
-          placeholder="Description"
-          className="w-full py-3 outline-none bg-transparent resize-none overflow-y-auto"
-        />
-
-      </div>
-      { form.description && (
-      <div className="prose max-w-none overflow-auto">
-      <p className="font-bold"> Description Preview (markdown): </p>
-        <div className="border border-gray-300 px-4 m-2 ">
-          <Markdown 
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeRaw]}
-          >
-            {form.description}
-          </Markdown>
-        </div>
-      </div>
-
-      )}
-      <div>
-        <p className="text-sm text-gray-500 mb-3">Status</p>
-
-        <div className="flex gap-3">
-          <button
-            type="button"
-            onClick={() => setValue("isActive", true)}
-            className={`px-4 py-2 rounded-full border transition ${
-              form.isActive
-                ? "bg-black text-white border-black"
-                : "border-gray-300"
-            }`}
-          >
-            Open
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setValue("isActive", false)}
-            className={`px-4 py-2 rounded-full border transition ${
-              !form.isActive
-                ? "bg-black text-white border-black"
-                : "border-gray-300"
-            }`}
-          >
-            Closed
-          </button>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap gap-4">
-
-        {images.map((src, index) => (
-          <div key={index} className="relative w-28 h-28">
-            <div className="w-full h-full rounded-xl overflow-hidden bg-gray-100">
-              <img
-                src={src}
-                alt={`upload-${index}`}
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            <div
-              onClick={() => handleRemoveImage(index)}
-              className="absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 z-10"
             >
-              −
+              {currencyList.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </div>
+          <div className={underline}>
+            <input
+              ref={priceRef}
+              type="number"
+              value={form.price}
+              onChange={(e) => setValue("price", e.target.value)}
+              placeholder="Price"
+              className="w-full py-3 outline-none bg-transparent"
+              onKeyDown={(e) => nextOnEnter(e, categoryRef)}
+              required
+            />
+          </div>
+        </div>
+
+        <p className="font-bold"> Category </p>
+        <div className="relative">
+          <div className={underline}>
+            {!form.categoryName ? (
+              <input
+                ref={categoryRef}
+                onKeyDown={(e) => nextOnEnter(e, descRef)}
+                value={categoryInput}
+                onChange={(e) => {
+                  setCategoryInput(e.target.value);
+                }}
+                onFocus={() => setShowSuggestion(true)}
+                onBlur={() => {
+                  setTimeout(() => setShowSuggestion(false), 150);
+                }}
+                placeholder="Category"
+                className="w-full py-3 outline-none bg-transparent"
+              />
+            ) : (
+              <div className="py-2 flex items-center gap-2">
+                <div className="px-4 py-1.5 rounded-full bg-black text-white text-sm flex items-center gap-2">
+                  <span>{form.categoryName}</span>
+
+                  <button
+                    type="button"
+                    onClick={clearCategory}
+                    className="hover:opacity-70"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {!showSuggestion &&
+            !form.categoryName &&
+            categoryInput.trim() &&
+            !filteredCategories.some(
+              (item) =>
+                item.toLowerCase() ===
+                categoryInput.trim().toLowerCase()
+            ) && (
+              <p className="mt-2 text-sm text-red-500">
+                * New Category
+              </p>
+            )}
+          {showSuggestion &&
+            !form.categoryName &&
+            filteredCategories.length > 0 && (
+              <div className="absolute z-30 mt-2 w-full rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+                {filteredCategories.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      selectCategory(item);
+                    }}
+                    className="w-full text-left px-4 py-3 hover:bg-gray-50 transition"
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            )}
+        </div>
+
+        <div className={underline}>
+          <p className="font-bold"> Description </p>
+          <textarea
+            ref={descRef}
+            value={form.description}
+            onChange={(e) => {
+              setValue("description", e.target.value);
+              resizeTextarea(e.target);
+            }}
+            placeholder="Description"
+            className="w-full py-3 outline-none bg-transparent resize-none overflow-y-auto"
+          />
+
+        </div>
+        {form.description && (
+          <div className="prose max-w-none overflow-auto">
+            <p className="font-bold"> Description Preview (markdown): </p>
+            <div className="border border-gray-300 px-4 m-2 ">
+              <Markdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw]}
+              >
+                {form.description}
+              </Markdown>
             </div>
           </div>
-        ))}
 
-        <label className="w-28 h-28 bg-gray-200 rounded-xl flex items-center justify-center cursor-pointer hover:bg-gray-300 transition">
-          <span className="text-4xl text-gray-500 font-light">+</span>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            className="hidden"
-            onChange={handleUpload}
-          />
-        </label>
-      </div>
+        )}
+        <div>
+          <p className="text-sm text-gray-500 mb-3">Status</p>
 
-      <button
-        type="submit"
-        disabled={status === "loading"}
-        className="w-full rounded-2xl bg-black text-white py-3 hover:bg-gray-800 transition disabled:opacity-60"
-      >
-        {status === "loading"
-          ? edit ? "Editing..." : "Creating..." 
-          : edit ? "Edit Comission" : "Create Commission"}
-      </button>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setValue("isActive", true)}
+              className={`px-4 py-2 rounded-full border transition ${form.isActive
+                  ? "bg-black text-white border-black"
+                  : "border-gray-300"
+                }`}
+            >
+              Open
+            </button>
 
-    </form>
-  </div>
+            <button
+              type="button"
+              onClick={() => setValue("isActive", false)}
+              className={`px-4 py-2 rounded-full border transition ${!form.isActive
+                  ? "bg-black text-white border-black"
+                  : "border-gray-300"
+                }`}
+            >
+              Closed
+            </button>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-4">
+
+          {images.map((src, index) => (
+            <div key={index} className="relative w-28 h-28">
+              <div className="w-full h-full rounded-xl overflow-hidden bg-gray-100">
+                <img
+                  src={src}
+                  alt={`upload-${index}`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div
+                onClick={() => handleRemoveImage(index)}
+                className="absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center bg-red-500 text-white rounded-full shadow-md hover:bg-red-600 z-10"
+              >
+                −
+              </div>
+            </div>
+          ))}
+
+          <label className="w-28 h-28 bg-gray-200 rounded-xl flex items-center justify-center cursor-pointer hover:bg-gray-300 transition">
+            <span className="text-4xl text-gray-500 font-light">+</span>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={handleUpload}
+            />
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          disabled={status === "loading"}
+          className="w-full rounded-2xl bg-black text-white py-3 hover:bg-gray-800 transition disabled:opacity-60"
+        >
+          {status === "loading"
+            ? edit ? "Editing..." : "Creating..."
+            : edit ? "Edit Comission" : "Create Commission"}
+        </button>
+
+      </form>
+    </div>
   );
 }
 
