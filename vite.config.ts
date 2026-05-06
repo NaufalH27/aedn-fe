@@ -15,7 +15,11 @@ export default defineConfig(({ mode }) => {
       __APP_ENV__: JSON.stringify(env.APP_ENV)
     },
     server: {
+<<<<<<< HEAD
       host : true,
+=======
+      host: true,
+>>>>>>> origin/main
       port: env.APP_PORT ? Number(env.APP_PORT) : 5173
     }
   }
