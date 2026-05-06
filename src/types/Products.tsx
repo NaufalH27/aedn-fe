@@ -1,20 +1,23 @@
+import type { CurrencyCode } from "../helper/currency";
+
 export type CategoryDto = {
   id: number;
   name: string;
 }
 
 export type Product = {
-  id: number;
+  id: string;
   title: string;
   price: number;
   urlSlug: string;
   quantity: number;
   description: string;
   category: CategoryDto | null;
-  currencyCode: string;
+  currencyCode: CurrencyCode;
   createdAt: string; 
   isActive: boolean;
   pictureUrls: string[];
+  isBookmarked?: boolean;
 }
 
 export type ReqProduct = {

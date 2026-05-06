@@ -2,9 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { login } from "../services/AuthService";
 import { jwtDecode } from "jwt-decode";
-import useAuthStore from "../store/AuthStore";
 import type { DecodedToken } from "../types/Auth";
-import { AxiosError } from "axios";
 
 type LoginMethod = "username" | "email";
 
@@ -59,8 +57,6 @@ function Login() {
 
       const decoded = jwtDecode<DecodedToken>(accessToken);
       const roles = decoded?.roles || [];
-
-      useAuthStore.getState().setAccessToken(accessToken);
 
       if (roles.includes("ROLE_ADMIN")) {
         navigate("/admin");

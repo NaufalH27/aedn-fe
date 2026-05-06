@@ -20,7 +20,7 @@ export const signup = async (username: string, email: string, password: string, 
       throw new Error(`signup Failed: ${res.error?.details}`);
     }
   } catch (err) {
-    handleApiError(err)
+    throw handleApiError(err)
 
   }
 };

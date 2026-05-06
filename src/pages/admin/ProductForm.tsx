@@ -1,10 +1,11 @@
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react"; 
 import type { ReqProduct } from "../../types/Products";
 import { editProduct, getUploadProductSignedUrl, submitProduct } from "../../services/ProductService";
 import Markdown from 'react-markdown'
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { uploadS3 } from "../../services/S3Service";
+import { currencyList } from "../../helper/currency";
 
 type Status = "idle" | "loading" | "success" | "error";
 
@@ -57,8 +58,6 @@ const extractKey = (url: string) => {
   }
 };
 
-
-const currencyList = ["USD", "IDR", "CNY", "RM", "SGD"];
 
 export default function ProductForm({
   categories,
@@ -170,6 +169,21 @@ export default function ProductForm({
       setStatus("error");
     }
   };
+
+  const resizeTextarea = (el: HTMLTextAreaElement) => {
+    el.style.height = "auto";
+
+    const minHeight = 100;
+    const maxHeight = 200;
+
+    el.style.height =
+      Math.min(Math.max(el.scrollHeight, minHeight), maxHeight) + "px";
+  };
+  useEffect(() => {
+    if (descRef.current) {
+      resizeTextarea(descRef.current);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
@@ -390,17 +404,18 @@ export default function ProductForm({
       </div>
 
       <div className={underline}>
-      <p className="font-bold"> Description </p>
+        <p className="font-bold"> Description </p>
         <textarea
           ref={descRef}
-          rows={4}
           value={form.description}
-          onChange={(e) =>
-            setValue("description", e.target.value)
-          }
+          onChange={(e) => {
+            setValue("description", e.target.value);
+            resizeTextarea(e.target);
+          }}
           placeholder="Description"
-          className="w-full py-3 outline-none bg-transparent resize-none"
+          className="w-full py-3 outline-none bg-transparent resize-none overflow-y-auto"
         />
+
       </div>
       { form.description && (
       <div className="prose max-w-none overflow-auto">

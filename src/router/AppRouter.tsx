@@ -2,11 +2,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "../pages/Login";
 import Signup from "../pages/Signup";
 import Dashboard from "../pages/admin/Dashboard";
-import Product from "../pages/user/Product";
 import Profile from "../pages/user/Profile";
 
 import { useAuthCheck } from "../hooks/AuthCheck";
 import type { ReactNode } from "react";
+import Commission from "../pages/user/Commission";
+import Commissions from "../pages/user/Commissions";
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -30,7 +31,8 @@ function AppRouter() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/product" element={<Product />} />
+        <Route path="/commissions" element={<Commissions />} />
+        <Route path="/commissions/:id" element={<Commission />} />
 
         <Route
           path="/admin"

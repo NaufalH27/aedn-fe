@@ -27,7 +27,8 @@ const useAuthStore = create<AuthState>((set) => ({
       username = decoded?.username || null;
       email = decoded?.email || null;
       fullName = decoded?.fullName || null;
-    } catch {
+    } catch (err) {
+      throw new Error("Malformed Token Please Reload This Page to reissue Token or relogin your account")
     }
 
     set({
