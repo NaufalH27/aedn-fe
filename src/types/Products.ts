@@ -31,7 +31,7 @@ export type ReqProduct = {
   isActive: Boolean;
 };
 
-export type UploadProductPictureUrl = {
+export type UploadPictureDto = {
   s3SignedUrl: string;
   filename: string;
   url: string;

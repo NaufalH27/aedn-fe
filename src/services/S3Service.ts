@@ -15,7 +15,7 @@ export async function uploadS3(s3Url: string, file: File, mimeType: string) {
       const status = axiosErr.response?.status;
 
       if (status && status >= 413) {
-        throw new Error("File Size exceed the limit of 8MB");
+        throw new Error("File Size exceed the limit of 50MB");
       }
 
       if (status && status >= 500) {

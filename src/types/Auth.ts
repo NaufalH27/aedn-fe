@@ -7,7 +7,7 @@ export type DecodedToken = {
   fullName?: string;
 };
 
-export type AuthState = {
+export type AuthData = {
   accessToken: string | null;
   decoded: DecodedToken | null;
   roles: string[];
@@ -15,7 +15,5 @@ export type AuthState = {
   username: string | null;
   email: string | null;
   fullName: string | null;
-
-  setAccessToken: (token: string) => void;
-  clearAccessToken: () => void;
 };
+

@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { login } from "../services/AuthService";
-import { jwtDecode } from "jwt-decode";
-import type { DecodedToken } from "../types/Auth";
+import useAuthStore from "../store/AuthStore";
+import { toast } from "../components/toast";
 
 type LoginMethod = "username" | "email";
 
@@ -54,14 +54,13 @@ function Login() {
         form.password,
         loginMethod
       );
+      const authData = useAuthStore.getState().setAccessToken(accessToken);
+      toast("success", "Login Success")
 
-      const decoded = jwtDecode<DecodedToken>(accessToken);
-      const roles = decoded?.roles || [];
-
-      if (roles.includes("ROLE_ADMIN")) {
+      if (authData.roles.includes("ROLE_ADMIN")) {
         navigate("/admin");
-      } else if (roles.includes("ROLE_USER")) {
-        navigate("/product");
+      } else if (authData.roles.includes("ROLE_USER")) {
+        navigate("/commissions");
       } else {
         navigate("/");
       }

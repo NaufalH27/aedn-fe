@@ -1,0 +1,14 @@
+import { handleApiError } from "../hooks/ApiErr";
+import { apiGet } from "./ApiService";
+
+export const getPaymentForm = async (): Promise<UserDto> => {
+  try {
+    const res = await apiGet<UserDto>("/payment/forms");
+    if (!res.success || !res.data) {
+      throw new Error(res?.error?.details ?? "Failed to get User Info, something unexpected happend");
+    }
+    return res.data;
+  } catch (err) {
+    throw handleApiError(err)
+  }
+};

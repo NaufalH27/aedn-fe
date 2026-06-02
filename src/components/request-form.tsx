@@ -1,18 +1,22 @@
 import { useState } from "react";
-import type { AuthState } from "../types/Auth";
-import { createRequest } from "../services/CommissionService";
+import { createRequest } from "../services/RequestCommissionService";
 import type { Product } from "../types/Products";
 import ErrorRedBox from "./error-red-box";
 import { LoadingIndicator } from "./loading-indicator";
+import { formatToPostgresTimestamp } from "../helper/timestamp";
+import type { AuthData } from "../types/Auth";
+import { toast } from "./toast";
 
 type Props = {
-  authState: AuthState;
+  authState: AuthData;
   product: Product
+  onSuccess?: () => void
 };
 
 export default function CommissionRequestForm({
   authState,
-  product
+  product,
+  onSuccess
 }: Props) {
   const initEmail = authState.email ?? ""
   const [name, setName] = useState(authState.username ?? "");
@@ -28,17 +32,23 @@ export default function CommissionRequestForm({
   | { status: "error"; message: string }
   const [reqState, setReqState] = useState<requestState>({ status: "idle" });
 
-  const formatToPostgresTimestamp = (value: string) => {
-    if (!value) return "";
-    const date = new Date(value);
-    return date.toISOString();
+  const isValidDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return !isNaN(date.getTime());
   };
 
   const handleSubmit = async () => {
     if (!acknowledged) return;
-
     try {
       setReqState({status: "loading"})
+      await new Promise(resolve => setTimeout(resolve, 200)); 
+      if (!deadline || !isValidDate(deadline)) {
+        setReqState({
+          status: "error",
+          message: "deadline cant be empty or invalid"
+        });
+        return;
+      }
       await createRequest({ 
         productId: product.id ,
         productTitle: product.title,
@@ -50,6 +60,10 @@ export default function CommissionRequestForm({
         price: product.price,
       })
       setReqState({status: "success"})
+      toast("success", "Request Creation Success")
+      if (onSuccess){
+        onSuccess()
+      }
     } catch (err) {
       if (err instanceof Error) {
         setReqState({status: "error", message: err.message})
@@ -57,7 +71,6 @@ export default function CommissionRequestForm({
         setReqState({status: "error", message: "Something UnExpected Happend"})
       }
     } 
-
   };
 
   return (

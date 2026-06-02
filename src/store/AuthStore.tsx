@@ -1,57 +1,73 @@
 import { create } from "zustand";
 import { jwtDecode } from "jwt-decode";
-import type { AuthState, DecodedToken } from "../types/Auth";
+import type { AuthData,  DecodedToken } from "../types/Auth";
+import { refreshAccessToken } from "../services/AuthService";
 
+type AuthState =
+  | { status: "init", initPromise: Promise<AuthData> }
+  | { status: "authenticated"; data: AuthData }
+  | { status: "unauthenticated" }
 
-const useAuthStore = create<AuthState>((set) => ({
-  accessToken: null,
-  decoded: null,
-  roles: [],
-  subject: null,
-  username: null,
-  fullName: null,
-  email: null,
+type AuthStore = {
+  authState: AuthState;
+  initAuth: () => Promise<AuthData>;
+  setAccessToken: (token: string) => AuthData;
+  clearAccessToken: () => void;
+};
 
-  setAccessToken: (token: string) => {
-    let decoded: DecodedToken | null = null;
-    let roles: string[] = [];
-    let subject: string | null = null;
-    let username: string | null = null;
-    let email: string | null = null;
-    let fullName: string | null = null;
+export const useAuthStore = create<AuthStore>((set, get) => ({
+  authState: { status: "unauthenticated" },
 
-    try {
-      decoded = jwtDecode<DecodedToken>(token);
-      roles = decoded?.roles || [];
-      subject = decoded?.sub || null;
-      username = decoded?.username || null;
-      email = decoded?.email || null;
-      fullName = decoded?.fullName || null;
-    } catch (err) {
-      throw new Error("Malformed Token Please Reload This Page to reissue Token or relogin your account")
-    }
+  setAccessToken: (token) => {
+    const decoded = jwtDecode<DecodedToken>(token);
 
-    set({
+    const authData: AuthData = {
       accessToken: token,
       decoded,
-      roles,
-      subject,
-      username,
-      email,
-      fullName,
-    });
+      roles: decoded.roles ?? [],
+      subject: decoded.sub ?? null,
+      username: decoded.username ?? null,
+      email: decoded.email ?? null,
+      fullName: decoded.fullName ?? null,
+    };
+
+    const newAuthState: AuthState = {
+        status: "authenticated",
+        data: authData,
+      }
+
+    set({authState: newAuthState});
+
+    return authData;
   },
 
-  clearAccessToken: () =>
+  initAuth: async () => {
+    const current = get().authState;
+
+    if (current.status === "init") {
+      return current.initPromise;
+    }
+
+    const initPromise = refreshAccessToken()
+      .then((res) => get().setAccessToken(res.accessToken));
+
     set({
-      accessToken: null,
-      decoded: null,
-      roles: [],
-      subject: null,
-      username: null,
-      email: null,
-      fullName: null,
-    }),
+      authState: {
+        status: "init",
+        initPromise,
+      },
+    });
+
+    return initPromise;
+  },
+
+  clearAccessToken: () => {
+    set({
+      authState: {
+        status: "unauthenticated",
+      },
+    });
+  },
 }));
 
-export default useAuthStore;
+export default useAuthStore

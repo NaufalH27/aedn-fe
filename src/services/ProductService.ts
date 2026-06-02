@@ -1,5 +1,5 @@
 import { apiDelete, apiGet, apiPost, apiPut } from "./ApiService"
-import type { Product, ReqProduct, UploadProductPictureUrl } from "../types/Products";
+import type { Product, ReqProduct, UploadPictureDto } from "../types/Products";
 import { handleApiError } from "../hooks/ApiErr";
 
 export const getAllProducts = async (): Promise<Product[]> => {
@@ -27,10 +27,10 @@ export const getProductById = async (pId: string): Promise<Product> => {
   }
 };
 
-export const getUploadProductSignedUrl = async (imageExtension: string): Promise<UploadProductPictureUrl> => {
+export const getUploadProductSignedUrl = async (imageExtension: string): Promise<UploadPictureDto> => {
   try {
 
-    const res = await apiPost<UploadProductPictureUrl>("/product/picture/signed-url/upload", { imageExtension: imageExtension });
+    const res = await apiPost<UploadPictureDto>("/product/picture/signed-url/upload", { imageExtension: imageExtension });
     if (!res.success || !res.data) {
       throw new Error(res?.error?.details ?? "Failed to get upload url, something unexpected Happend");
     }
@@ -70,7 +70,7 @@ export const editProduct = async (product: ReqProduct, id: string) => {
 export const deleteProduct = async (id: string) => {
   try {
     const res = await apiDelete<Product>(`/products/${id}`);
-    if (!res.success || !res.data) {
+    if (!res.success) {
       throw new Error(res?.error?.details ?? "Failed to delete products, something unexpected happend");
     }
   } catch (err) {

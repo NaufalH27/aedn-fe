@@ -10,9 +10,7 @@ import ErrorState from "../../components/error-page";
 import Breadcrumbs from "../../components/breadcrumbs";
 import { formatCurrency } from "../../helper/currency";
 import CommissionRequestForm from "../../components/request-form";
-import { useAuthCheck } from "../../hooks/AuthCheck";
 import useAuthStore from "../../store/AuthStore";
-import type { AuthState } from "../../types/Auth";
 import { LoadingIndicator } from "../../components/loading-indicator";
 import ErrorRedBox from "../../components/error-red-box";
 
@@ -39,27 +37,24 @@ const DUMMY_HOW_TO = `
 `;
 
 export default function Commission() {
-  const { status, error } = useAuthCheck();
   const { id } = useParams();
+  const authState = useAuthStore((s) => s.authState);
   const [imgIndex, setImgIndex] = useState(0);
   const [accepted, setAccepted] = useState(false);
   const [expandRequestForm, setExpandRequestForm] = useState(false);
   const touchStartX = useRef<number | null>(null);
-  type requestState =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "error"; message: string }
-  | { status: "autheticated"; auth: AuthState }
-  | { status: "unauthenticated" }
-  const [reqState, setReqState] = useState<requestState>({ status: "idle" });
   type CommissionState =
   | { status: "loading" }
   | { status: "error"; message: string }
   | { status: "success"; data: Product };
   const [state, setState] = useState<CommissionState>({ status: "loading" });
 
-  const handleGetData = async (id: string) => {
+  const handleGetData = async () => {
     setState({ status: "loading" });
+    if (!id) {
+      setState({ status: "error", message: "ID is not provided in the URL" });
+      return;
+    }
     try {
       const result = await getProductById(id);
       setState({ status: "success", data: result });
@@ -71,32 +66,8 @@ export default function Commission() {
     }
   };
 
-  const handleOnRequest = async() => {
-    if (status === "loading") {
-      setReqState({status: "loading"})
-    } else if (status === "unauthenticated") {
-      setReqState({status: "unauthenticated"})
-    } else if (status === "unauthorized") {
-      setReqState({status: "unauthenticated"})
-    } else if (status === "error") {
-      setReqState({status: "error", message: error ?? "Something Unexpected Happened, Please Try Again Later"})
-    } else {
-      const auth = useAuthStore.getState()
-      if (auth.subject === null) {
-        setReqState({status: "unauthenticated"})
-      } else {
-        setReqState({status:"autheticated", auth: auth})
-        setExpandRequestForm(true)
-      }
-    }
-  }
-
   useEffect(() => {
-    if (!id) {
-      setState({ status: "error", message: "ID is not provided in the URL" });
-      return;
-    }
-    handleGetData(id);
+    handleGetData();
   }, [id]);
 
 
@@ -121,7 +92,7 @@ export default function Commission() {
     return (
       <ErrorState
       message={state.message}
-      onRetry={id ? () => handleGetData(id) : undefined}
+      onRetry={id ? () => handleGetData() : undefined}
       />
     );
   }
@@ -364,18 +335,18 @@ export default function Commission() {
                 </span>
               </label>
 
-              {reqState.status === "error" && (
-                <ErrorRedBox message={reqState.message}/>
+              {authState.status === "init" && (
+                <LoadingIndicator />
               )}
-              {reqState.status === "unauthenticated" && (
+              {authState.status === "unauthenticated" && (
                 <ErrorRedBox message="You need to Login to make a request commission"/>
               )}
 
               {/* Request button */}
-              {!expandRequestForm && (
+              {!expandRequestForm && authState.status === "authenticated" && (
                 <>
                 <button
-                  onClick={handleOnRequest}
+                  onClick={() => setExpandRequestForm(true)}
                   disabled={!accepted || isClosed}
                   className={`w-full py-3.5 rounded-xl font-semibold text-sm transition ${
                     accepted && !isClosed
@@ -383,9 +354,7 @@ export default function Commission() {
                       : "bg-gray-100 text-gray-400 cursor-not-allowed"
                   }`}
                 >
-                  {reqState.status === "loading" ? (
-                    <LoadingIndicator />
-                  ) : isClosed ? (
+                  {isClosed ? (
                     "Commission Closed"
                   ) : (
                     "Request Commission"
@@ -398,10 +367,13 @@ export default function Commission() {
                 )}
                 </>
               )}
-
-              {expandRequestForm && reqState.status === "autheticated" && (
-                <CommissionRequestForm authState={reqState.auth} product={state.data}/>
+              {expandRequestForm && authState.status === "authenticated" && (
+                <CommissionRequestForm authState={authState.data} product={state.data} onSuccess={() => {
+                  setAccepted(false)
+                  setExpandRequestForm(false)
+                }}/>
               )}
+
 
             </div>
           </div>

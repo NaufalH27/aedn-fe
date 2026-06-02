@@ -13,6 +13,7 @@ export const handleApiError = (err: unknown): unknown => {
     }
 
     return new Error(
+      axiosErr.response?.data?.message ??
       axiosErr.response?.data?.error?.details ??
       "Request failed: " + err.message
     );

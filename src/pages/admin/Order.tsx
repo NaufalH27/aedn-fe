@@ -1,0 +1,263 @@
+import { useEffect, useState } from "react";
+import { OrderStatusList, type DrawingProgressPreviewDto, type OrderDto, type OrderStatus } from "../../types/OrderCommission";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useToast } from "../../components/toast";
+import { getAllOrder, getOrderDrawingProgress, proceedOrderPaymentAnyway } from "../../services/OrderCommissionService";
+import Modal from "../../components/modal";
+import { OrderTable } from "../../components/order-table";
+import { OrderCard } from "../../components/order-card";
+import { OrderDrawing, OrderDrawingSkeleton } from "../../components/order-drawing-progress";
+import ConfirmModal from "../../components/confirm-modal";
+import { LoadingModal } from "../../components/loading-modal";
+import AddDrawingProgress from "../../components/add-order-drawing-progress";
+import MarkAsDoneModal from "../../components/mark-done-order-modal";
+
+
+type FetchState =
+  | { status: "loading" }
+  | { status: "success"; data: OrderDto[] }
+  | { status: "error"; error: string };
+
+type FetchDrawingProgressState =
+  | { status: "loading" }
+  | { status: "idle" }
+  | { status: "success"; data: DrawingProgressPreviewDto[] }
+  | { status: "error"; error: string };
+
+const sortOrder: Record<OrderStatus, number> = {
+  in_progress: 0,
+  pending_payment: 1,
+  done: 2,
+  cancelled: 3,
+};
+
+type ChangeState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; data: OrderDto[] }
+  | { status: "error"; error: string };
+
+
+
+export default function OrderPage() {
+  const [state, setState] = useState<FetchState>({status: "loading",});
+  const [changeState, setChangeState] = useState<ChangeState>({status: "idle",});
+  const [drawingProgressState, setDrawingProgressState] = useState<FetchDrawingProgressState>({status: "idle",});
+  const [activeTab, setActiveTab] = useState<"All" | OrderStatus>("All");
+  const [selectedOrder, setSelectedOrder] = useState<OrderDto | null>(null)
+  const [paymentProceedWaringModal, setPaymentProceedWarningModal] = useState(false)
+  const [doneModal, setDoneModal] = useState(false)
+
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams();
+  const {showToast} = useToast();
+
+  const item = searchParams.get("item");
+
+  useEffect(() => {
+
+    const params = new URLSearchParams(searchParams);
+
+    if (selectedOrder) {
+      params.set("item", selectedOrder.id);
+    } else {
+      params.delete("item");
+    }
+
+    const nextSearch = params.toString();
+    const currentSearch = searchParams.toString();
+
+    if (nextSearch !== currentSearch) {
+      navigate(`?${nextSearch}`, { replace: true });
+    }
+  }, [selectedOrder, searchParams, navigate]);
+
+  useEffect(() => {
+    if (selectedOrder) {
+      handleGetDrawingProgress(selectedOrder.id)
+    } else {
+      setDrawingProgressState({status: "idle"})
+    }
+  }, [selectedOrder])
+
+  const filteredOrder =
+  state.status === "success"
+    ? state.data
+        .filter((order) =>
+          activeTab === "All" ? true : order.status === activeTab
+        )
+        .sort((a, b) => sortOrder[a.status] - sortOrder[b.status])
+    : [];
+
+
+  const handleGetAll = async () => {
+    setState({ status: "loading" });
+    try {
+      const data = await getAllOrder();
+      setState({ status: "success", data });
+      if (item) {
+        const select = data.find(x => x.id === item);
+        if (select) {
+          setSelectedOrder(select)
+        } else {
+          showToast("error", "Item Not Found")
+        }
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Unknown error";
+
+      setState({ status: "error", error: message });
+    }
+  };
+
+  const handleProceedPaymentAnyway = async(id: string) => {
+    setChangeState({ status: "loading" });
+    setPaymentProceedWarningModal(false)
+    try {
+      await proceedOrderPaymentAnyway(id);
+      showToast("success", "proceed payment successfully")
+      await handleGetAll()
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Unknown error";
+      setChangeState({ status: "error", error: message });
+      showToast("error", message)
+    } finally {
+      setChangeState({status: "idle"})
+    }
+  }
+
+  const handleGetDrawingProgress = async(orderId: string) => {
+    setDrawingProgressState({ status: "loading" });
+    try {
+      const data = await getOrderDrawingProgress(orderId);
+
+      setDrawingProgressState({ status: "success", data });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+
+      setState({ status: "error", error: message });
+    }
+  }
+
+  useEffect(() => {
+    handleGetAll()
+  }, [])
+
+  return (
+    <div className="min-h-screen px-6 py-8">
+      <h1 className="text-4xl font-normal tracking-tight text-black">
+        My Order
+      </h1>
+      <div className="mt-10 flex gap-6 border-b border-gray-200 text-sm font-semibold">
+        {(["All", ...OrderStatusList] as const).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`pb-3 transition ${
+              tab === activeTab
+                ? "border-b border-black text-black"
+                : "text-gray-400 hover:text-black"
+            }`}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {state.status === "loading" && (
+        <div className="p-6 text-sm text-gray-500">Loading Order...</div>
+      )}
+
+      {state.status === "error" && (
+        <>
+        <div className="p-6 text-sm text-red-500">{state.error}</div>
+          <button onClick={handleGetAll} className="px-5 py-2 bg-black text-white rounded-xl">
+            Retry
+          </button>
+        </>
+      )}
+      
+      {state.status === "success" && (
+        <>
+          <OrderTable orders={filteredOrder} onClickOrder={setSelectedOrder} />
+        {state.data.length === 0 && (
+          <div className="w-full  h-100  justify-center flex content-center pt-30">
+            <span> No Order Found </span>
+          </div>
+
+        )}
+
+        </>
+      )}
+      {selectedOrder && (
+        <>
+        <Modal
+          onClose={() => setSelectedOrder(null)}
+          title={`${selectedOrder.username}'s ${selectedOrder.product.title} Order`}
+          size="xl"
+        >
+          <div className={`relative w-full max-h-[90vh] overflow-y-auto px-2`}>
+            <OrderCard order={selectedOrder} />
+            {drawingProgressState.status === "success" && (
+              <OrderDrawing drawings={drawingProgressState.data}/>
+            )}
+
+            {drawingProgressState.status === "loading" && (
+              <OrderDrawingSkeleton />
+            )}
+
+            {selectedOrder.status === "in_progress" && (
+              <div className="mt-5 mb-10">
+                <AddDrawingProgress id={selectedOrder.id} onSuccess={async() => {
+                  await handleGetAll()
+                }}/>
+              </div>
+            )}
+
+            {selectedOrder.status === "pending_payment" && (
+              <div className="flex justify-end items-center gap-5">
+                <span> Waiting Payment from client, Or Do you want to Proceed Anyway? </span>
+                <button 
+                  onClick={() => setPaymentProceedWarningModal(true)}
+                  className="rounded-xl bg-black px-6 py-3 text-sm font-medium text-white hover:bg-gray-700 transition" > 
+                  Proceed Anyway
+                </button>
+              </div>
+            )}
+            <div className="flex w-full justify-end">
+            {selectedOrder.status === "in_progress" && (
+              <button 
+                onClick={() => setDoneModal(true)}
+                className="rounded-xl bg-black px-6 py-3 text-sm font-medium text-white hover:bg-gray-700 transition" > 
+                Mark As Done
+              </button>
+            )}
+            </div>
+
+          </div>
+        </Modal>
+        <LoadingModal open={changeState.status === "loading"} />
+        {doneModal && (
+          <MarkAsDoneModal open={doneModal} onCancel={() => setDoneModal(false)} onSuccess={() => handleGetAll()} id={selectedOrder.id}/>
+        )}
+        {paymentProceedWaringModal && (
+          <ConfirmModal
+            open={paymentProceedWaringModal}
+            title="Proceed Order Anyway"
+            description="Do you want to Proceed this order without payment?"
+            confirmClassName="bg-red-500 text-white"
+            confirmText="Proceed"
+            onCancel={() => setPaymentProceedWarningModal(false)}
+            onConfirm={() => {
+              handleProceedPaymentAnyway(selectedOrder.id) 
+            }}
+          />
+        )}
+      </>
+      )}
+    </div>
+  )
+}
+

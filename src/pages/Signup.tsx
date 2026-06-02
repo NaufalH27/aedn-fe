@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { signup } from "../services/AuthService";
+import { toast } from "../components/toast";
 
 function Signup() {
   const usernameRegex = /^[a-zA-Z0-9]+$/;
@@ -48,6 +49,7 @@ function Signup() {
         form.password,
         form.fullName
       );
+        toast("success", "Sign Up Success")
         navigate("/login");
     } catch (err) {
       if (err instanceof Error) {
