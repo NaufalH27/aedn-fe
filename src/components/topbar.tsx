@@ -6,16 +6,11 @@ import { toast } from "./toast";
 import { ChevronDownIcon } from "lucide-react";
 import { LoadingIndicator } from "./loading-indicator";
 
-type LogoutState =
-  | { status: "loading" }
-  | { status: "success"; }
-  | { status: "error"; error: string };
-
 
 export default function Topbar() {
   const authState = useAuthStore((s) => s.authState);
 
-  const [logoutState, setLogoutState] = useState<LogoutState>({status: "loading",});
+  const [isLoggingOut, setIsLoggingOut] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -31,25 +26,24 @@ export default function Topbar() {
 
   const navigate = useNavigate()
   const handleLogout = async() => {
-    setLogoutState({status: "loading"});
+    setIsLoggingOut(true)
     try {
        await logout();
        navigate("/")
        toast("success", "Logout Successfully")
-      setLogoutState({status: "success"});
     } catch (error) {
       const errMsg =  error instanceof Error ? error.message : "Unknown Error"
       toast("error", errMsg)
-      setLogoutState({status: "error", error: errMsg})
+    } finally {
+        setIsLoggingOut(false)
     }
   };
 
   const navLinks = [
-    { name: "My Works", path: "/" },
-    { name: "About Me", path: "/" },
-    { name: "Contact", path: "/" },
     { name: "Open Commissions", path: "/commissions" },
   ];
+  
+  const isLoading = isLoggingOut || authState.status === "init"
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white/70 backdrop-blur-xl border-b border-gray-200/50 shadow-sm transition-all duration-300">
@@ -64,8 +58,6 @@ export default function Topbar() {
                 </span>
               </Link>
             </div>
-
-            {/* Left Navigation */}
 
             <nav className="hidden md:flex space-x-8">
               {navLinks.map((link) => {
@@ -105,15 +97,15 @@ export default function Topbar() {
                     authState.status === "authenticated" &&
                     setIsDropdownOpen(!isDropdownOpen)
                   }
-                  disabled={authState.status === "init"}
+                  disabled={isLoading}
                   className={`flex h-11 w-16 items-center justify-center gap-1 p-2 rounded-lg transition-colors ${
-                    authState.status === "init"
+                    isLoading
                       ? "cursor-not-allowed opacity-60"
                       : "text-gray-600 hover:text-black hover:bg-gray-100"
                   }`}
                   aria-label="Menu"
                 >
-                  {authState.status === "init" ? (
+                  {isLoading ? (
                     <LoadingIndicator />
                   ) : (
                     <>

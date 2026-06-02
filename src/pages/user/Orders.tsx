@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { OrderStatusList, type DrawingProgressDto, type DrawingProgressPreviewDto, type OrderDto, type OrderStatus } from "../../types/OrderCommission";
+import { OrderStatusList, type DrawingProgressPreviewDto, type OrderDto, type OrderStatus } from "../../types/OrderCommission";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useToast } from "../../components/toast";
 import { getMyOrder, getOrderDrawingProgress } from "../../services/OrderCommissionService";

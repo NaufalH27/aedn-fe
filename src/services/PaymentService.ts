@@ -1,4 +1,5 @@
 import { handleApiError } from "../hooks/ApiErr";
+import type { UserDto } from "../types/User";
 import { apiGet } from "./ApiService";
 
 export const getPaymentForm = async (): Promise<UserDto> => {
