@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { login } from "../services/AuthService";
+import { useState } from "react";
 import useAuthStore from "../store/AuthStore";
-import { toast } from "../components/toast";
+import { login } from "../services/AuthService";
+import { useToast } from "../components/toast";
 
 type LoginMethod = "username" | "email";
+type LoginStatus = "idle" | "loading" | "success" | "error";
 
 type FormState = {
   username: string;
@@ -14,8 +16,10 @@ type FormState = {
 
 function Login() {
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
 
+  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<LoginStatus>("idle");
+  const [showPassword, setShowPassword] = useState(false);
   const [loginMethod, setLoginMethod] = useState<LoginMethod>("username");
 
   const [form, setForm] = useState<FormState>({
@@ -24,7 +28,14 @@ function Login() {
     password: "",
   });
 
+  const resetStatus = () => {
+    setStatus("idle");
+    setError(null);
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    resetStatus();
+
     const { name, value } = e.target;
 
     setForm((prev) => ({
@@ -34,6 +45,8 @@ function Login() {
   };
 
   const toggleMethod = () => {
+    resetStatus();
+
     setLoginMethod((prev) =>
       prev === "username" ? "email" : "username"
     );
@@ -45,8 +58,13 @@ function Login() {
     });
   };
 
-  const handleSubmit = async (e: React.SubmitEvent) => {
+  const {showToast} = useToast()
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    resetStatus();
+    setStatus("loading");
+
     try {
       const accessToken = await login(
         form.username,
@@ -54,8 +72,13 @@ function Login() {
         form.password,
         loginMethod
       );
-      const authData = useAuthStore.getState().setAccessToken(accessToken);
-      toast("success", "Login Success")
+
+      const authData = useAuthStore
+        .getState()
+        .setAccessToken(accessToken);
+
+      setStatus("success");
+      showToast("success", "Login Success");
 
       if (authData.roles.includes("ROLE_ADMIN")) {
         navigate("/admin");
@@ -65,89 +88,113 @@ function Login() {
         navigate("/");
       }
     } catch (err) {
-        if (err instanceof Error) {
-          setError(err.message);
+      setStatus("error");
+
+      if (err instanceof Error) {
+        setError(err.message);
       } else {
-        setError("Something unexpected happend");
+        setError("Something unexpected happened");
       }
     }
   };
 
+  const isLoading = status === "loading";
+
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 px-4">
-      <div className="w-full max-w-md bg-white shadow-xl rounded-2xl p-8">
-        <h2 className="text-3xl font-bold text-center mb-2">
-          Welcome Back
-        </h2>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 from-gray-950 via-gray-900 to-gray-800 px-4">
+      <div className="w-full max-w-md rounded-3xl bg-white/95 shadow-2xl p-8">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-950">
+            Welcome Back
+          </h1>
+          <p className="mt-2 text-sm text-gray-500">
+            Sign in to continue to your account
+          </p>
+        </div>
 
-        <p className="text-gray-500 text-center mb-6">
-          Login to your account
-        </p>
+        {error && (
+          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            Login failed: {error}
+          </div>
+        )}
 
-          {error && (
-            <div className="bg-red-100 mb-5 border border-red-400 text-red-700 px-4 py-3 rounded-lg text-sm">
-            Login Failed: {error}
-            </div>
-          )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block mb-1 font-medium text-sm text-gray-700">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               {loginMethod === "username" ? "Username" : "Email"}
             </label>
 
             <input
-              type="text"
+              type={loginMethod === "email" ? "email" : "text"}
               name={loginMethod}
               value={form[loginMethod]}
-              placeholder={`Enter your ${loginMethod}`}
+              placeholder={
+                loginMethod === "username"
+                  ? "Enter your username"
+                  : "Enter your email"
+              }
               maxLength={255}
               required
+              disabled={isLoading}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-gray-950 focus:ring-2 focus:ring-gray-950/20 disabled:cursor-not-allowed disabled:bg-gray-100"
             />
           </div>
 
           <div>
-            <label className="block mb-1 font-medium text-sm text-gray-700">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               Password
             </label>
 
-            <input
-              type="password"
-              name="password"
-              value={form.password}
-              placeholder="Enter your password"
-              maxLength={72}
-              required
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={form.password}
+                placeholder="Enter your password"
+                maxLength={72}
+                required
+                disabled={isLoading}
+                onChange={handleChange}
+                className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 pr-12 text-gray-900 outline-none transition focus:border-gray-950 focus:ring-2 focus:ring-gray-950/20 disabled:cursor-not-allowed disabled:bg-gray-100"
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
           </div>
 
-          <p
+          <button
+            type="button"
             onClick={toggleMethod}
-            className="text-sm text-blue-600 cursor-pointer hover:underline"
+            disabled={isLoading}
+            className="text-sm font-medium text-blue-600 hover:underline disabled:cursor-not-allowed disabled:text-gray-400"
           >
             Use {loginMethod === "username" ? "Email" : "Username"} instead
-          </p>
-
+          </button>
 
           <button
             type="submit"
-            className="w-full bg-gray-950 text-white py-3 rounded-lg font-semibold hover:bg-gray-800 transition"
+            disabled={isLoading}
+            className="w-full rounded-xl bg-gray-950 py-3 font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-500"
           >
-            LOGIN
+            {isLoading ? "Logging in..." : "Login"}
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="mt-8 text-center text-sm text-gray-500">
           Don&apos;t have an account?{" "}
           <Link
             to="/signup"
-            className="text-blue-600 font-medium hover:underline"
+            className="font-semibold text-blue-600 hover:underline"
           >
-            Register Here
+            Register here
           </Link>
         </p>
       </div>
