@@ -49,7 +49,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
 
     const initPromise = refreshAccessToken()
-      .then((res) => get().setAccessToken(res.accessToken));
+      .then((res) => get().setAccessToken(res.accessToken))
+      .catch((err) => {
+        set({
+          authState: {
+            status: "unauthenticated",
+          },
+        });
+        throw err
+      });
 
     set({
       authState: {

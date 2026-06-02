@@ -10,7 +10,7 @@ import { LoadingIndicator } from "./loading-indicator";
 export default function Topbar() {
   const authState = useAuthStore((s) => s.authState);
 
-  const [isLoggingOut, setIsLoggingOut] = useState(true);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
