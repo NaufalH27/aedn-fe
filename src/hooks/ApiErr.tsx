@@ -8,7 +8,7 @@ export const handleApiError = (err: unknown): unknown => {
       return new Error("Cannot connect to server. Server is unreachable, check your internet or try again later");
     }
 
-    if (status && status >= 500) {
+    if (status && (status == 500 || status == 501)) {
       return new Error("Something UNexpected Happend in the server. Please try again later");
     }
 

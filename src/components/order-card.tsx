@@ -79,12 +79,12 @@ export function OrderCard({ order }: CardProps) {
         />
         <Info label="Paid At" value={order.paidAt ? formatDate(order.paidAt) : "-"} />
       </div>
-      {order.price === order.proposedPrice || order.deadline !== order.proposedDeadline && (
+      {(order.price !== order.proposedPrice ||
+        order.deadline !== order.proposedDeadline) && (
         <p className="text-sm text-gray-500 mt-4">
           Note: <span className="text-red-400">*</span> indicates the value has changed from the proposed value that client requests.
         </p>
       )}
-
 
       <div className="mb-5 mt-5 rounded-xl bg-gray-50 p-4">
         <p className="mb-1 text-xs font-medium text-gray-500">Extra Info</p>

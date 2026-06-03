@@ -5,6 +5,7 @@ import type {
 
 import { useToast } from "../../components/toast";
 import {
+    getAllWebsiteProfile,
   getUploadProfilePictureSignedUrl,
   getWebsiteProfile,
   updateWebsiteProfile,
@@ -160,7 +161,7 @@ export default function WebsiteProfilePage() {
     setState({ status: "loading" });
 
     try {
-      const result = await getWebsiteProfile();
+      const result = await getAllWebsiteProfile();
       const nextForm = toRequestDto(result);
 
       setForm(nextForm);

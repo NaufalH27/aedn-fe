@@ -121,29 +121,33 @@ export default function Topbar() {
 
                 {isDropdownOpen && authState.status === "authenticated" && (
                   <div className="absolute right-0 top-12 mt-2 w-48 bg-white rounded-xl shadow-lg py-2 border border-gray-300 z-50 overflow-hidden">
-                    <Link
-                      to="/profile"
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="block hover:font-bold px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-all"
-                    >
-                      Profile
-                    </Link>
 
-                    <Link
-                      to="/requests"
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="block hover:font-bold px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-all"
-                    >
-                      My Requests
-                    </Link>
+                    {!authState.data.roles.includes("ROLE_ADMIN") && (
+                      <>
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="block hover:font-bold px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-all"
+                      >
+                        Profile
+                      </Link>
+                      <Link
+                        to="/requests"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="block hover:font-bold px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-all"
+                      >
+                        My Requests
+                      </Link>
 
-                    <Link
-                      to="/orders"
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="block hover:font-bold px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-all"
-                    >
-                      My Order
-                    </Link>
+                      <Link
+                        to="/orders"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="block hover:font-bold px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-100 transition-all"
+                      >
+                        My Order
+                      </Link>
+                      </>
+                    )}
 
                     {authState.data.roles.includes("ROLE_ADMIN") && (
                       <Link

@@ -20,6 +20,23 @@ export const getWebsiteProfile = async (): Promise<WebsiteProfileDto> => {
   }
 };
 
+export const getAllWebsiteProfile = async (): Promise<WebsiteProfileDto> => {
+  try {
+    const res = await apiGet<WebsiteProfileDto>("/website-profile/all");
+
+    if (!res.success || !res.data) {
+      throw new Error(
+        res?.error?.details ??
+          "Failed to get Website Profile, something unexpected happened"
+      );
+    }
+
+    return res.data;
+  } catch (err) {
+    throw handleApiError(err);
+  }
+};
+
 export const getContact = async () => {
   try {
     const res = await apiGet<ContactInfoDto>("/website-profile/contact");
